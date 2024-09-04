@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fluid Particle System with Enhanced Visuals</title>
     <style>
         body, html {
@@ -29,7 +29,9 @@
         let globalReverb;
 
         function setup() {
-            createCanvas(windowWidth, windowHeight);
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('body');  // Asegurarnos de que el canvas esté anclado al body
+
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
@@ -74,7 +76,6 @@
             zoff += 0.001;  // Movimiento muy suave del campo de flujo
         }
 
-        // Detectar interacciones en pantallas táctiles
         function touchStarted() {
             startAudio();
         }
@@ -85,9 +86,12 @@
 
         function startAudio() {
             if (!audioStarted) {
-                userStartAudio();  // Iniciar el contexto de audio
-                audioStarted = true;
-                loop();  // Comenzar el bucle de draw
+                userStartAudio().then(() => {
+                    audioStarted = true;
+                    loop();  // Comenzar el bucle de draw
+                }).catch((err) => {
+                    console.log('Error al iniciar el audio: ', err);
+                });
             }
         }
 
@@ -174,7 +178,6 @@
             }
         }
 
-        // Redimensionar el canvas si el tamaño de la ventana cambia (útil para móviles)
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight);
         }
@@ -183,8 +186,6 @@
     </script>
 </body>
 </html>
-
-
 
 
 
