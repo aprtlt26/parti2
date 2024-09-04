@@ -49,7 +49,7 @@
             if (!audioStarted) return;
 
             // Aplicar fondo con baja opacidad para desvanecimiento suave sin parches
-            background(0, 20);  // Negro con 20 de opacidad para efecto de desvanecimiento
+            background(0, 10);  // Negro con 20 de opacidad para efecto de desvanecimiento
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -149,7 +149,7 @@
                 } else if (this.isTurquoise) {
                     stroke(64, 224, 208, brightness);  // Verde turquesa
                 } else {
-                    stroke(brightness, brightness, brightness, 150);  // Variaciones de blanco
+                    stroke(brightness, brightness, brightness, 250);  // Variaciones de blanco
                 }
 
                 strokeWeight(0.6);  // Grosor de las líneas ajustado para mayor visibilidad
