@@ -48,9 +48,8 @@
         function draw() {
             if (!audioStarted) return;
 
-            // Aplicar un fondo semitransparente para desvanecer las líneas gradualmente
-            fill(0, 10); // Negro con 10 de opacidad para un desvanecimiento más sutil
-            rect(0, 0, width, height); // Cubrir la pantalla
+            // Aplicar fondo con baja opacidad para desvanecimiento suave sin parches
+            background(0, 10); // Negro con 10 de opacidad para efecto de desvanecimiento
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -105,6 +104,7 @@
                 this.nextSoundTime = millis() + random(3000, 10000); // Tiempo hasta que suene nuevamente
 
                 this.isTurquoise = random(1) < 0.2; // 20% de partículas en verde turquesa
+                this.isBrightWhite = random(1) < 0.15; // 15% de partículas serán blancas brillantes para más profundidad
                 this.hasLight = random(1) < 0.1; // 10% de las partículas serán puntos de luz
             }
 
@@ -129,7 +129,7 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.0, 0.5), 0.3); // Variación en la amplitud
+                    this.oscillator.amp(random(0.2, 0.7), 0.5); // Variación en la amplitud
                     setTimeout(() => {
                         this.oscillator.amp(0, 1); // Fade out al final
                         setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
@@ -146,12 +146,14 @@
                     // Dibujar un punto de luz sutil
                     noStroke();
                     fill(255, 255, 200, brightness); // Color sutil de luz
-                    ellipse(this.pos.x, this.pos.y, 0.7); // Pequeño punto de luz con grosor mínimo
+                    ellipse(this.pos.x, this.pos.y, 2); // Pequeño punto de luz
                 } else {
                     // Dibujar líneas extremadamente delgadas
-                    strokeWeight(0.07); // Todas las líneas y puntos son extremadamente delgados
+                    strokeWeight(0.01); // Todas las líneas y puntos son extremadamente delgados
                     if (this.isTurquoise) {
                         stroke(64, 224, 208, brightness); // Verde turquesa
+                    } else if (this.isBrightWhite) {
+                        stroke(255, 255, 255, 200); // Blancas brillantes para más profundidad
                     } else {
                         stroke(brightness, brightness, brightness, 150); // Variaciones de blanco
                     }
@@ -173,6 +175,7 @@
     </script>
 </body>
 </html>
+
 
 
 
