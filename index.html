@@ -49,7 +49,7 @@
             if (!audioStarted) return;
 
             // Aplicar fondo con baja opacidad para desvanecimiento suave sin parches
-            background(0); // Negro con 10 de opacidad para efecto de desvanecimiento
+            background(0, 5) // Negro con 10 de opacidad para efecto de desvanecimiento
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -146,7 +146,7 @@
                     // Dibujar un punto de luz sutil
                     noStroke();
                     fill(255, 255, 200, brightness); // Color sutil de luz
-                    ellipse(this.pos.x, this.pos.y, 4); // Pequeño punto de luz
+                    ellipse(this.pos.x, this.pos.y, 2); // Pequeño punto de luz
                 } else {
                     // Dibujar líneas extremadamente delgadas
                     strokeWeight(0.1); // Todas las líneas y puntos son extremadamente delgados
