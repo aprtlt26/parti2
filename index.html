@@ -17,13 +17,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.05; // Incremento para más detalle
-        let scl = 15; // Escala aumentada para menos densidad
+        let inc = 0.05;
+        let scl = 15;
         let cols, rows;
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 1; // Reducido para movimientos más lentos
+        let maxSpeed = 1;
         let audioStarted = false;
 
         let globalReverb;
@@ -35,7 +35,7 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6); // Reverb más larga y envolvente
+            globalReverb.set(12, 6);
 
             for (let i = 0; i < 300; i++) {
                 particles[i] = new Particle();
@@ -55,7 +55,7 @@
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
                     v.y += 1;
-                    v.setMag(0.15); // Movimiento aún más lento para mayor suavidad
+                    v.setMag(0.15);
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -68,14 +68,14 @@
                 particles[i].edges();
                 particles[i].show();
             }
-            zoff += 0.001; // Movimiento más lento para más fluidez
+            zoff += 0.001;
         }
 
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio(); // Iniciar el contexto de audio
+                userStartAudio();
                 audioStarted = true;
-                loop(); // Comenzar el bucle de draw
+                loop();
             }
         }
 
@@ -85,12 +85,12 @@
 
         function touchMoved() {
             modulateInteraction(touchX, touchY);
-            return false; // Prevenir el comportamiento por defecto de desplazamiento en dispositivos táctiles
+            return false;
         }
 
         function modulateInteraction(x, y) {
-            let speedFactor = map(x, 0, width, 0.3, 2); // Modula la velocidad de las partículas, ajustado para más lentitud
-            let frequencyFactor = map(y, 0, height, 0.2, 3); // Modula la frecuencia con un rango más amplio
+            let speedFactor = map(x, 0, width, 0.3, 2);
+            let frequencyFactor = map(y, 0, height, 0.2, 3);
 
             maxSpeed = speedFactor;
 
@@ -109,18 +109,20 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                // Crear un oscilador con una frecuencia aleatoria en un rango más amplio
-                this.baseFreq = random(50, 3000); // Rango de frecuencias más amplio
+                this.baseFreq = random(50, 3000);
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0); // Comienza en silencio
+                this.oscillator.amp(0);
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.15; // Menor probabilidad de sonido para más silencios
-                this.soundDuration = random(5000, 15000); // Duración del sonido variable
-                this.nextSoundTime = millis() + random(3000, 10000); // Tiempo hasta que suene nuevamente
+                this.shouldPlaySound = random(1) < 0.15;
+                this.soundDuration = random(5000, 15000);
+                this.nextSoundTime = millis() + random(3000, 10000);
+
+                // Determinar si la partícula será verde turquesa o blanca
+                this.isTurquoise = random(1) < 0.2; // 20% de probabilidad de ser verde turquesa
             }
 
             follow(vectors) {
@@ -137,27 +139,31 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed); // Limitar velocidad máxima
+                this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.2, 0.7), 0.5); // Amplitud variable
+                    this.oscillator.amp(random(0.2, 0.7), 0.5);
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1); // Fade out al final
-                        setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
+                        this.oscillator.amp(0, 1);
+                        setTimeout(() => this.oscillator.stop(), 1000);
                     }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 10000); // Recalcular el próximo tiempo para que suene
+                    this.nextSoundTime = currentTime + random(3000, 10000);
                 }
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Ajustar brillo basado en velocidad
-                stroke(0, brightness, 0, 150); // Color verde con diferentes tonos y transparencia
-                strokeWeight(1);
+                let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255);
+                if (this.isTurquoise) {
+                    stroke(64, 224, 208, brightness); // Verde turquesa
+                } else {
+                    stroke(brightness, brightness, brightness, 150); // Variaciones de blanco
+                }
+                strokeWeight(0.5); // Líneas más delgadas
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -171,7 +177,7 @@
             }
         }
 
-        noLoop(); // Evitar que el draw se ejecute hasta que el usuario interactúe
+        noLoop();
     </script>
 </body>
 </html>
