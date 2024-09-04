@@ -103,7 +103,7 @@
                 this.soundDuration = random(5000, 15000); // Duración variable del sonido
                 this.nextSoundTime = millis() + random(3000, 10000); // Tiempo hasta que suene nuevamente
 
-                this.isTurquoise = random(1) < 0.2; // 20% de partículas en verde turquesa
+                this.isTurquoise = random(1) < 0.3; // 20% de partículas en verde turquesa
                 this.isBrightWhite = random(1) < 0.15; // 15% de partículas serán blancas brillantes para más profundidad
                 this.hasLight = random(1) < 0.1; // 10% de las partículas serán puntos de luz
             }
@@ -149,7 +149,7 @@
                     ellipse(this.pos.x, this.pos.y, 2); // Pequeño punto de luz
                 } else {
                     // Dibujar líneas extremadamente delgadas
-                    strokeWeight(0.01); // Todas las líneas y puntos son extremadamente delgados
+                    strokeWeight(0.08); // Todas las líneas y puntos son extremadamente delgados
                     if (this.isTurquoise) {
                         stroke(64, 224, 208, brightness); // Verde turquesa
                     } else if (this.isBrightWhite) {
