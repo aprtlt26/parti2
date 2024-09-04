@@ -114,7 +114,7 @@
                 this.nextSoundTime = millis() + random(3000, 10000); // Tiempo hasta que suene nuevamente
 
                 this.isTurquoise = random(1) < 0.2; // 20% de partículas en verde turquesa
-                this.hasLight = random(1) < 0.1; // 10% de las partículas tendrán un brillo o luz
+                this.hasLight = random(1) < 0.5; // 10% de las partículas tendrán un brillo o luz
             }
 
             follow(vectors) {
@@ -149,7 +149,6 @@
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 40, 255); // Brillo basado en velocidad
 
                 if (this.isTurquoise) {
                     stroke(64, 224, 208, brightness); // Verde turquesa
