@@ -48,6 +48,10 @@
         function draw() {
             if (!audioStarted) return;
 
+            // Aplicar un fondo semitransparente para desvanecer las líneas gradualmente
+            fill(0, 10); // Negro con 10 de opacidad para un desvanecimiento más sutil
+            rect(0, 0, width, height); // Cubrir la pantalla
+
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -139,13 +143,13 @@
                 let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Brillo basado en velocidad
 
                 if (this.hasLight) {
-                    // Dibujar un punto de luz
+                    // Dibujar un punto de luz sutil
                     noStroke();
                     fill(255, 255, 200, brightness); // Color sutil de luz
-                    ellipse(this.pos.x, this.pos.y, 1); // Pequeño punto de luz
+                    ellipse(this.pos.x, this.pos.y, 2); // Pequeño punto de luz con grosor mínimo
                 } else {
-                    // Dibujar líneas delgadas
-                    strokeWeight(0.1); // Todas las líneas son muy delgadas
+                    // Dibujar líneas extremadamente delgadas
+                    strokeWeight(0.01); // Todas las líneas y puntos son extremadamente delgados
                     if (this.isTurquoise) {
                         stroke(64, 224, 208, brightness); // Verde turquesa
                     } else {
