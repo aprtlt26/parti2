@@ -23,7 +23,7 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 2;
+        let maxSpeed = 1; // Reducido para movimientos más lentos
         let audioStarted = false;
 
         let globalReverb;
@@ -37,7 +37,6 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 6); // Reverb más larga y envolvente
 
-            // Reducir el número de partículas para rendimiento móvil
             for (let i = 0; i < 300; i++) {
                 particles[i] = new Particle();
             }
@@ -56,7 +55,7 @@
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
                     v.y += 1;
-                    v.setMag(0.3); // Movimiento más lento para mayor suavidad
+                    v.setMag(0.15); // Movimiento aún más lento para mayor suavidad
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -69,7 +68,7 @@
                 particles[i].edges();
                 particles[i].show();
             }
-            zoff += 0.002; // Movimiento más lento para más fluidez
+            zoff += 0.001; // Movimiento más lento para más fluidez
         }
 
         function mousePressed() {
@@ -90,8 +89,8 @@
         }
 
         function modulateInteraction(x, y) {
-            let speedFactor = map(x, 0, width, 0.5, 4); // Modula la velocidad de las partículas
-            let frequencyFactor = map(y, 0, height, 0.5, 2); // Modula la frecuencia
+            let speedFactor = map(x, 0, width, 0.3, 2); // Modula la velocidad de las partículas, ajustado para más lentitud
+            let frequencyFactor = map(y, 0, height, 0.2, 3); // Modula la frecuencia con un rango más amplio
 
             maxSpeed = speedFactor;
 
@@ -110,8 +109,8 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                // Crear un oscilador con una frecuencia aleatoria
-                this.baseFreq = random(100, 2200);
+                // Crear un oscilador con una frecuencia aleatoria en un rango más amplio
+                this.baseFreq = random(50, 3000); // Rango de frecuencias más amplio
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0); // Comienza en silencio
@@ -119,9 +118,9 @@
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.2; // 20% de probabilidad de que tenga sonido activo
-                this.soundDuration = 10000; // Duración del sonido en milisegundos
-                this.nextSoundTime = millis() + random(3000, 8000); // Tiempo hasta que suene nuevamente
+                this.shouldPlaySound = random(1) < 0.15; // Menor probabilidad de sonido para más silencios
+                this.soundDuration = random(5000, 15000); // Duración del sonido variable
+                this.nextSoundTime = millis() + random(3000, 10000); // Tiempo hasta que suene nuevamente
             }
 
             follow(vectors) {
@@ -145,19 +144,19 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(0.5, 0.5); // Fade in al inicio
+                    this.oscillator.amp(random(0.2, 0.7), 0.5); // Amplitud variable
                     setTimeout(() => {
                         this.oscillator.amp(0, 1); // Fade out al final
                         setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
                     }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 8000);
+                    this.nextSoundTime = currentTime + random(3000, 10000); // Recalcular el próximo tiempo para que suene
                 }
             }
 
             show() {
                 let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Ajustar brillo basado en velocidad
-                stroke(255, brightness, brightness, 100); // Efecto de velo con diferentes tonos de blanco
+                stroke(0, brightness, 0, 150); // Color verde con diferentes tonos y transparencia
                 strokeWeight(1);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
@@ -176,5 +175,6 @@
     </script>
 </body>
 </html>
+
 
 
