@@ -17,8 +17,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.1;
-        let scl = 15; // Aumentado para reducir la carga en dispositivos móviles
+        let inc = 0.05; // Incremento para más detalle
+        let scl = 15; // Escala aumentada para menos densidad
         let cols, rows;
         let zoff = 0;
         let particles = [];
@@ -35,9 +35,10 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6);
+            globalReverb.set(12, 6); // Reverb más larga y envolvente
 
-            for (let i = 0; i < 300; i++) { // Reducido a 300 partículas para mejorar el rendimiento
+            // Reducir el número de partículas para rendimiento móvil
+            for (let i = 0; i < 300; i++) {
                 particles[i] = new Particle();
             }
 
@@ -55,7 +56,7 @@
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
                     v.y += 1;
-                    v.setMag(0.5);
+                    v.setMag(0.3); // Movimiento más lento para mayor suavidad
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -68,14 +69,14 @@
                 particles[i].edges();
                 particles[i].show();
             }
-            zoff += 0.003;
+            zoff += 0.002; // Movimiento más lento para más fluidez
         }
 
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio();
+                userStartAudio(); // Iniciar el contexto de audio
                 audioStarted = true;
-                loop();
+                loop(); // Comenzar el bucle de draw
             }
         }
 
@@ -85,12 +86,12 @@
 
         function touchMoved() {
             modulateInteraction(touchX, touchY);
-            return false;
+            return false; // Prevenir el comportamiento por defecto de desplazamiento en dispositivos táctiles
         }
 
         function modulateInteraction(x, y) {
-            let speedFactor = map(x, 0, width, 0.5, 4);
-            let frequencyFactor = map(y, 0, height, 0.5, 2);
+            let speedFactor = map(x, 0, width, 0.5, 4); // Modula la velocidad de las partículas
+            let frequencyFactor = map(y, 0, height, 0.5, 2); // Modula la frecuencia
 
             maxSpeed = speedFactor;
 
@@ -109,17 +110,18 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
+                // Crear un oscilador con una frecuencia aleatoria
                 this.baseFreq = random(100, 2200);
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);
+                this.oscillator.amp(0); // Comienza en silencio
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.2;
-                this.soundDuration = 10000;
-                this.nextSoundTime = millis() + random(3000, 8000);
+                this.shouldPlaySound = random(1) < 0.2; // 20% de probabilidad de que tenga sonido activo
+                this.soundDuration = 10000; // Duración del sonido en milisegundos
+                this.nextSoundTime = millis() + random(3000, 8000); // Tiempo hasta que suene nuevamente
             }
 
             follow(vectors) {
@@ -136,17 +138,17 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(maxSpeed);
+                this.vel.limit(this.maxSpeed); // Limitar velocidad máxima
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(0.5, 0.5);
+                    this.oscillator.amp(0.5, 0.5); // Fade in al inicio
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);
-                        setTimeout(() => this.oscillator.stop(), 1000);
+                        this.oscillator.amp(0, 1); // Fade out al final
+                        setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 8000);
@@ -154,12 +156,9 @@
             }
 
             show() {
-                let alpha = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Controla la opacidad
-                let weight = map(this.vel.mag(), 0, maxSpeed, 0.5, 2); // Controla el grosor
-                let colorFactor = map(this.vel.mag(), 0, maxSpeed, 150, 255); // Variación en gama de blancos
-
-                stroke(colorFactor, colorFactor, 255, alpha);
-                strokeWeight(weight);
+                let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Ajustar brillo basado en velocidad
+                stroke(255, brightness, brightness, 100); // Efecto de velo con diferentes tonos de blanco
+                strokeWeight(1);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -173,8 +172,9 @@
             }
         }
 
-        noLoop();
+        noLoop(); // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
+
 
