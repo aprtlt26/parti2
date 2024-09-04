@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluid Particle System with Sound</title>
+    <title>Fluid Particle System with Enhanced Visuals</title>
     <style>
         body, html {
             margin: 0;
@@ -17,13 +17,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.02; // Incremento pequeño para movimiento lento
-        let scl = 20; // Escala aumentada para menor densidad
+        let inc = 0.02;  // Incremento pequeño para movimiento lento
+        let scl = 20;    // Escala aumentada para menor densidad
         let cols, rows;
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.5; // Velocidad reducida para mayor fluidez
+        let maxSpeed = 0.5;  // Velocidad reducida para mayor fluidez
         let audioStarted = false;
 
         let globalReverb;
@@ -35,7 +35,7 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6); // Reverb larga y envolvente
+            globalReverb.set(12, 6);  // Reverb larga y envolvente
 
             // Crear las partículas
             for (let i = 0; i < 250; i++) {
@@ -49,7 +49,7 @@
             if (!audioStarted) return;
 
             // Aplicar fondo con baja opacidad para desvanecimiento suave sin parches
-            background(0, 20) // Negro con 10 de opacidad para efecto de desvanecimiento
+            background(0, 20);  // Negro con 20 de opacidad para efecto de desvanecimiento
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -58,7 +58,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1); // Magnitud pequeña para movimiento más suave
+                    v.setMag(0.1);  // Magnitud pequeña para movimiento más suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -72,14 +72,14 @@
                 particles[i].edges();
                 particles[i].show();
             }
-            zoff += 0.001; // Movimiento muy suave del campo de flujo
+            zoff += 0.001;  // Movimiento muy suave del campo de flujo
         }
 
         function mousePressed() {
             if (!audioStarted) {
-                userStartAudio(); // Iniciar el contexto de audio
+                userStartAudio();  // Iniciar el contexto de audio
                 audioStarted = true;
-                loop(); // Comenzar el bucle de draw
+                loop();  // Comenzar el bucle de draw
             }
         }
 
@@ -91,7 +91,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(50, 3000); // Ampliación del rango de frecuencia
+                this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
@@ -99,13 +99,13 @@
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
 
-                this.shouldPlaySound = random(1) < 0.15; // Sonido ocasional
-                this.soundDuration = random(5000, 15000); // Duración variable del sonido
-                this.nextSoundTime = millis() + random(3000, 10000); // Tiempo hasta que suene nuevamente
+                this.shouldPlaySound = random(1) < 0.15;  // Sonido ocasional
+                this.soundDuration = random(5000, 15000);  // Duración variable del sonido
+                this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
 
-                this.isTurquoise = random(1) < 0.3; // 20% de partículas en verde turquesa
-                this.isBrightWhite = random(1) < 0.15; // 15% de partículas serán blancas brillantes para más profundidad
-                this.hasLight = random(1) < 0.1; // 10% de las partículas serán puntos de luz
+                this.isTurquoise = random(1) < 0.3;  // 30% de partículas en verde turquesa
+                this.isBrightWhite = random(1) < 0.3;  // 30% de partículas serán blancas brillantes para más profundidad
+                this.isSoftWhite = random(1) < 0.3;  // 30% serán partículas blancas suaves
             }
 
             follow(vectors) {
@@ -122,44 +122,39 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed); // Velocidad limitada para mayor fluidez
+                this.vel.limit(this.maxSpeed);  // Velocidad limitada para mayor fluidez
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.2, 0.7), 0.5); // Variación en la amplitud
+                    this.oscillator.amp(random(0.2, 0.7), 0.5);  // Variación en la amplitud
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1); // Fade out al final
-                        setTimeout(() => this.oscillator.stop(), 1000); // Apagar el oscilador después del fade out
+                        this.oscillator.amp(0, 1);  // Fade out al final
+                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
                     }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 10000); // Recalcular el próximo tiempo para que suene
+                    this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
                 }
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 80, 255); // Brillo basado en velocidad
+                let brightness = map(this.vel.mag(), 0, maxSpeed, 80, 255);  // Brillo basado en velocidad
 
-                if (this.hasLight) {
-                    // Dibujar un punto de luz sutil
-                    noStroke();
-                    fill(255, 255, 200, brightness); // Color sutil de luz
-                    ellipse(this.pos.x, this.pos.y, 2); // Pequeño punto de luz
+                if (this.isBrightWhite) {
+                    stroke(255, 255, 255, 255);  // Blancas brillantes para más profundidad
+                } else if (this.isSoftWhite) {
+                    stroke(255, 255, 255, 120);  // Blancas suaves para dar sensación de transparencia
+                } else if (this.isTurquoise) {
+                    stroke(64, 224, 208, brightness);  // Verde turquesa
                 } else {
-                    // Dibujar líneas extremadamente delgadas
-                    strokeWeight(0.1); // Todas las líneas y puntos son extremadamente delgados
-                    if (this.isTurquoise) {
-                        stroke(64, 224, 208, brightness); // Verde turquesa
-                    } else if (this.isBrightWhite) {
-                        stroke(255, 255, 255, 200); // Blancas brillantes para más profundidad
-                    } else {
-                        stroke(brightness, brightness, brightness, 150); // Variaciones de blanco
-                    }
-                    line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                    this.prevPos = this.pos.copy();
+                    stroke(brightness, brightness, brightness, 150);  // Variaciones de blanco
                 }
+
+                strokeWeight(0.6);  // Grosor de las líneas ajustado para mayor visibilidad
+                line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
+                this.prevPos = this.pos.copy();
             }
 
             edges() {
@@ -171,11 +166,10 @@
             }
         }
 
-        noLoop(); // Evitar que el draw se ejecute hasta que el usuario interactúe
+        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
-
 
 
 
