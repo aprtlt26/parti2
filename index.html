@@ -48,8 +48,8 @@
         function draw() {
             if (!audioStarted) return;
 
-     background(0, 10); // Negro con 10 de opacidad para efecto de desvanecimiento
-       
+            background(0, 10); // Negro con 10 de opacidad para efecto de desvanecimiento
+
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
                 let xoff = 0;
@@ -74,7 +74,16 @@
             zoff += 0.001;  // Movimiento muy suave del campo de flujo
         }
 
+        // Detectar interacciones en pantallas táctiles
+        function touchStarted() {
+            startAudio();
+        }
+
         function mousePressed() {
+            startAudio();
+        }
+
+        function startAudio() {
             if (!audioStarted) {
                 userStartAudio();  // Iniciar el contexto de audio
                 audioStarted = true;
@@ -93,7 +102,7 @@
                 this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);
+                this.oscillator.amp(0);  // Comienza en silencio
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
@@ -128,7 +137,7 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.2, 0.7), 0.5);  // Variación en la amplitud
+                    this.oscillator.amp(random(0.01, 0.05), 0.5);  // Reducir la amplitud de los osciladores
                     setTimeout(() => {
                         this.oscillator.amp(0, 1);  // Fade out al final
                         setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
@@ -165,10 +174,16 @@
             }
         }
 
+        // Redimensionar el canvas si el tamaño de la ventana cambia (útil para móviles)
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+
         noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
+
 
 
 
