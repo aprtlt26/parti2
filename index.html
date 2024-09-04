@@ -140,12 +140,12 @@
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 80, 255);  // Brillo basado en velocidad
+                let brightness = map(this.vel.mag(), 0, maxSpeed, 100, 255);  // Brillo basado en velocidad
 
                 if (this.isBrightWhite) {
                     stroke(255, 255, 255, 255);  // Blancas brillantes para más profundidad
                 } else if (this.isSoftWhite) {
-                    stroke(255, 255, 255, 120);  // Blancas suaves para dar sensación de transparencia
+                    stroke(255, 255, 255, 220);  // Blancas suaves para dar sensación de transparencia
                 } else if (this.isTurquoise) {
                     stroke(64, 224, 208, brightness);  // Verde turquesa
                 } else {
