@@ -149,7 +149,7 @@
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 50, 255); // Brillo basado en velocidad
+                let brightness = map(this.vel.mag(), 0, maxSpeed, 40, 255); // Brillo basado en velocidad
 
                 if (this.isTurquoise) {
                     stroke(64, 224, 208, brightness); // Verde turquesa
@@ -158,7 +158,7 @@
                 }
 
                 if (this.hasLight) {
-                    strokeWeight(1); // Líneas finas, pero con grosor ligeramente mayor para las partículas con luz
+                    strokeWeight(0.2); // Líneas finas, pero con grosor ligeramente mayor para las partículas con luz
                     stroke(255, brightness, 100); // Color con brillo especial
                 } else {
                     strokeWeight(0.1); // Líneas muy delgadas para todas las partículas
