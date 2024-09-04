@@ -37,7 +37,7 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 6); // Reverb larga y envolvente
 
-            // Creación de partículas con luces en algunas de ellas
+            // Creación de partículas
             for (let i = 0; i < 250; i++) { // Menos partículas para mayor rendimiento
                 particles[i] = new Particle();
             }
@@ -158,10 +158,10 @@
                 }
 
                 if (this.hasLight) {
-                    strokeWeight(3); // Partículas seleccionadas con un grosor mayor para simular luz
+                    strokeWeight(1); // Líneas finas, pero con grosor ligeramente mayor para las partículas con luz
                     stroke(255, brightness, 100); // Color con brillo especial
                 } else {
-                    strokeWeight(0.2); // Líneas más delgadas
+                    strokeWeight(0.3); // Líneas muy delgadas para todas las partículas
                 }
 
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
