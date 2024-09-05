@@ -28,8 +28,7 @@
         let globalReverb;
 
         function setup() {
-            let canvas = createCanvas(windowWidth, windowHeight);
-            canvas.parent('body');  // Asegurarnos de que el canvas esté anclado al body
+            createCanvas(windowWidth, windowHeight);  // Ajustar el canvas al tamaño de la ventana
 
             cols = floor(width / scl);
             rows = floor(height / scl);
@@ -48,7 +47,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10);  // Negro con 10 de opacidad para efecto de desvanecimiento
+            background(0, 10);  // Fondo negro con opacidad
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -57,7 +56,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1);  // Magnitud pequeña para movimiento más suave
+                    v.setMag(0.1);  // Movimiento más suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -70,7 +69,8 @@
                 particles[i].edges();
                 particles[i].show();
             }
-            zoff += 0.001;  // Movimiento muy suave del campo de flujo
+
+            zoff += 0.001;  // Suave movimiento del campo de flujo
         }
 
         function touchStarted() {
@@ -85,7 +85,7 @@
             if (!audioStarted) {
                 userStartAudio().then(() => {
                     audioStarted = true;
-                    loop();  // Comenzar el bucle de draw
+                    loop();  // Iniciar el bucle de draw
                 }).catch((err) => {
                     console.log('Error al iniciar el audio: ', err);
                 });
@@ -138,7 +138,7 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.05), 0.5);  // Volumen reducido de osciladores
+                    this.oscillator.amp(random(0.01, 0.03), 0.5);  // Volumen bajo de osciladores
                     setTimeout(() => {
                         this.oscillator.amp(0, 1);  // Fade out
                         setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador
@@ -176,7 +176,7 @@
         }
 
         function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
+            resizeCanvas(windowWidth, windowHeight);  // Redimensionar el canvas en pantallas móviles
         }
 
         noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
