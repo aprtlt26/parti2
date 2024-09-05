@@ -11,6 +11,9 @@
             overflow: hidden;
             background: black;
         }
+        canvas {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -28,7 +31,12 @@
         let globalReverb;
 
         function setup() {
-            createCanvas(windowWidth, windowHeight);  // Ajuste de tamaño en cualquier pantalla
+            // Crear el canvas de acuerdo al tamaño de la ventana
+            let canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent(document.body); // Adjuntar el canvas al body para asegurar que se vea en móviles
+
+            // Ajustes para la densidad de píxeles (móviles tienen más densidad)
+            pixelDensity(1);
 
             cols = floor(width / scl);
             rows = floor(height / scl);
