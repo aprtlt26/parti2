@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fluid Particle System with Enhanced Visuals</title>
+    <title>Fluid Particle System</title>
     <style>
         body, html {
             margin: 0;
@@ -25,7 +25,6 @@
         let flowfield;
         let maxSpeed = 0.5;  // Velocidad reducida para mayor fluidez
         let audioStarted = false;
-
         let globalReverb;
 
         function setup() {
@@ -39,7 +38,6 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 6);  // Reverb larga y envolvente
 
-            // Crear las partículas
             for (let i = 0; i < 250; i++) {
                 particles[i] = new Particle();
             }
@@ -50,7 +48,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); // Negro con 10 de opacidad para efecto de desvanecimiento
+            background(0, 10);  // Negro con 10 de opacidad para efecto de desvanecimiento
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -66,7 +64,6 @@
                 yoff += inc;
             }
 
-            // Actualizar y mostrar partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
                 particles[i].update();
@@ -116,7 +113,7 @@
                 this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
 
                 this.isTurquoise = random(1) < 0.3;  // 30% de partículas en verde turquesa
-                this.isBrightWhite = random(1) < 0.3;  // 30% de partículas serán blancas brillantes para más profundidad
+                this.isBrightWhite = random(1) < 0.3;  // 30% de partículas serán blancas brillantes
                 this.isSoftWhite = random(1) < 0.3;  // 30% serán partículas blancas suaves
             }
 
@@ -141,10 +138,10 @@
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.05), 0.5);  // Reducir la amplitud de los osciladores
+                    this.oscillator.amp(random(0.01, 0.05), 0.5);  // Volumen reducido de osciladores
                     setTimeout(() => {
-                        this.oscillator.amp(0, 1);  // Fade out al final
-                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador después del fade out
+                        this.oscillator.amp(0, 1);  // Fade out
+                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador
                     }, this.soundDuration - 1000);
 
                     this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
@@ -155,16 +152,16 @@
                 let brightness = map(this.vel.mag(), 0, maxSpeed, 100, 255);  // Brillo basado en velocidad
 
                 if (this.isBrightWhite) {
-                    stroke(255, 255, 255, 255);  // Blancas brillantes para más profundidad
+                    stroke(255, 255, 255, 255);  // Blancas brillantes
                 } else if (this.isSoftWhite) {
-                    stroke(255, 255, 255, 220);  // Blancas suaves para dar sensación de transparencia
+                    stroke(255, 255, 255, 220);  // Blancas suaves
                 } else if (this.isTurquoise) {
                     stroke(64, 224, 208, brightness);  // Verde turquesa
                 } else {
                     stroke(brightness, brightness, brightness, 250);  // Variaciones de blanco
                 }
 
-                strokeWeight(0.6);  // Grosor de las líneas ajustado para mayor visibilidad
+                strokeWeight(0.6);  // Grosor de las líneas ajustado
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
