@@ -10,7 +10,6 @@
             padding: 0;
             overflow: hidden;
             background: black;
-            height: 100%;
         }
         canvas {
             display: block;
@@ -32,31 +31,31 @@
         let globalReverb;
 
         function setup() {
-            // Crear el canvas con respecto a la pantalla
+            // Crear el canvas con respecto a la pantalla, para móviles y desktop
             let canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent(document.body);
 
-            pixelDensity(1); // Evitar problemas de densidad en móviles
+            pixelDensity(displayDensity()); // Ajustar la densidad de píxeles para dispositivos retina
 
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6);  // Reverb larga
+            globalReverb.set(12, 6);  // Reverb larga y envolvente
 
             // Crear las partículas
             for (let i = 0; i < 250; i++) {
                 particles[i] = new Particle();
             }
 
-            background(0);
+            background(0); // Fondo completamente negro
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); // Fondo negro con transparencia ligera
+            background(0, 10); // Fondo negro con transparencia
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -65,7 +64,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1);  // Movimiento suave
+                    v.setMag(0.1);  // Movimiento más suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -84,7 +83,7 @@
 
         function touchStarted() {
             startAudio();
-            return false;  // Prevenir el desplazamiento en pantallas táctiles
+            return false;  // Prevenir desplazamiento en pantallas móviles
         }
 
         function mousePressed() {
@@ -110,7 +109,7 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(50, 3000);  // Rango de frecuencia ampliado
+                this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);  // Comienza en silencio
@@ -122,9 +121,9 @@
                 this.soundDuration = random(5000, 15000);  // Duración variable del sonido
                 this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
 
-                this.isTurquoise = random(1) < 0.3;  // 30% en verde turquesa
-                this.isBrightWhite = random(1) < 0.3;  // 30% blancas brillantes
-                this.isSoftWhite = random(1) < 0.3;  // 30% blancas suaves
+                this.isTurquoise = random(1) < 0.3;
+                this.isBrightWhite = random(1) < 0.3;
+                this.isSoftWhite = random(1) < 0.3;
             }
 
             follow(vectors) {
@@ -193,7 +192,6 @@
     </script>
 </body>
 </html>
-
 
 
 
