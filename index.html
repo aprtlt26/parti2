@@ -35,10 +35,12 @@
         let globalReverb;
 
         function setup() {
+            // Crear el canvas con respecto a la pantalla, para móviles y desktop
             let canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent(document.body);
 
-            pixelDensity(1); // Ajuste de densidad de píxeles para móviles
+            pixelDensity(displayDensity()); // Ajustar la densidad de píxeles para dispositivos retina
+
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
@@ -46,17 +48,18 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 6);  // Reverb larga y envolvente
 
+            // Crear las partículas
             for (let i = 0; i < 250; i++) {
                 particles[i] = new Particle();
             }
 
-            background(0);
+            background(0); // Fondo completamente negro
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); // Fondo negro con transparencia
+            background(0); // Fondo negro fijo sin transparencia
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
