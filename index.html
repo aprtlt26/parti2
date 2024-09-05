@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fluid Particle System</title>
+    <title>Fluid Particle System for Mobile</title>
     <style>
         body, html {
             margin: 0;
@@ -17,18 +17,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
-        let inc = 0.02;  // Incremento pequeño para movimiento lento
-        let scl = 20;    // Escala aumentada para menor densidad
+        let inc = 0.02;
+        let scl = 20;
         let cols, rows;
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.5;  // Velocidad reducida para mayor fluidez
+        let maxSpeed = 0.5;
         let audioStarted = false;
         let globalReverb;
 
         function setup() {
-            createCanvas(windowWidth, windowHeight);  // Ajustar el canvas al tamaño de la ventana
+            createCanvas(windowWidth, windowHeight);  // Ajuste de tamaño en cualquier pantalla
 
             cols = floor(width / scl);
             rows = floor(height / scl);
@@ -47,7 +47,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10);  // Fondo negro con opacidad
+            background(0, 10);  // Fondo negro con transparencia
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -56,7 +56,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1);  // Movimiento más suave
+                    v.setMag(0.1);  // Movimiento más lento
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -85,7 +85,7 @@
             if (!audioStarted) {
                 userStartAudio().then(() => {
                     audioStarted = true;
-                    loop();  // Iniciar el bucle de draw
+                    loop();  // Iniciar el bucle de dibujo
                 }).catch((err) => {
                     console.log('Error al iniciar el audio: ', err);
                 });
@@ -112,9 +112,9 @@
                 this.soundDuration = random(5000, 15000);  // Duración variable del sonido
                 this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
 
-                this.isTurquoise = random(1) < 0.3;  // 30% de partículas en verde turquesa
-                this.isBrightWhite = random(1) < 0.3;  // 30% de partículas serán blancas brillantes
-                this.isSoftWhite = random(1) < 0.3;  // 30% serán partículas blancas suaves
+                this.isTurquoise = random(1) < 0.3;
+                this.isBrightWhite = random(1) < 0.3;
+                this.isSoftWhite = random(1) < 0.3;
             }
 
             follow(vectors) {
@@ -131,37 +131,37 @@
 
             update() {
                 this.vel.add(this.acc);
-                this.vel.limit(this.maxSpeed);  // Velocidad limitada para mayor fluidez
+                this.vel.limit(this.maxSpeed);
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.03), 0.5);  // Volumen bajo de osciladores
+                    this.oscillator.amp(random(0.01, 0.03), 0.5);  // Volumen reducido
                     setTimeout(() => {
                         this.oscillator.amp(0, 1);  // Fade out
-                        setTimeout(() => this.oscillator.stop(), 1000);  // Apagar el oscilador
+                        setTimeout(() => this.oscillator.stop(), 1000);
                     }, this.soundDuration - 1000);
 
-                    this.nextSoundTime = currentTime + random(3000, 10000);  // Recalcular el próximo tiempo para que suene
+                    this.nextSoundTime = currentTime + random(3000, 10000);
                 }
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 100, 255);  // Brillo basado en velocidad
+                let brightness = map(this.vel.mag(), 0, maxSpeed, 100, 255);
 
                 if (this.isBrightWhite) {
-                    stroke(255, 255, 255, 255);  // Blancas brillantes
+                    stroke(255, 255, 255, 255);
                 } else if (this.isSoftWhite) {
-                    stroke(255, 255, 255, 220);  // Blancas suaves
+                    stroke(255, 255, 255, 220);
                 } else if (this.isTurquoise) {
-                    stroke(64, 224, 208, brightness);  // Verde turquesa
+                    stroke(64, 224, 208, brightness);
                 } else {
-                    stroke(brightness, brightness, brightness, 250);  // Variaciones de blanco
+                    stroke(brightness, brightness, brightness, 250);
                 }
 
-                strokeWeight(0.6);  // Grosor de las líneas ajustado
+                strokeWeight(0.6);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -176,14 +176,13 @@
         }
 
         function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);  // Redimensionar el canvas en pantallas móviles
+            resizeCanvas(windowWidth, windowHeight);  // Asegurar que el canvas se redimensione correctamente en móviles
         }
 
         noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
-
 
 
 
