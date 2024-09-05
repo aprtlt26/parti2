@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fluid Particle System for Mobile</title>
+    <title>Fluid Particle System</title>
     <style>
         body, html {
             margin: 0;
@@ -31,12 +31,11 @@
         let globalReverb;
 
         function setup() {
-            // Crear el canvas de acuerdo al tamaño de la ventana
+            // Crear el canvas con respecto a la pantalla, para móviles y desktop
             let canvas = createCanvas(windowWidth, windowHeight);
-            canvas.parent(document.body); // Adjuntar el canvas al body para asegurar que se vea en móviles
+            canvas.parent(document.body);
 
-            // Ajustes para la densidad de píxeles (móviles tienen más densidad)
-            pixelDensity(1);
+            pixelDensity(1); // Ajustar densidad de píxeles para móviles
 
             cols = floor(width / scl);
             rows = floor(height / scl);
@@ -45,6 +44,7 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(12, 6);  // Reverb larga y envolvente
 
+            // Crear las partículas
             for (let i = 0; i < 250; i++) {
                 particles[i] = new Particle();
             }
@@ -55,7 +55,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10);  // Fondo negro con transparencia
+            background(0, 10); // Fondo negro con transparencia
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -64,7 +64,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1);  // Movimiento más lento
+                    v.setMag(0.1);  // Movimiento más suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -78,7 +78,7 @@
                 particles[i].show();
             }
 
-            zoff += 0.001;  // Suave movimiento del campo de flujo
+            zoff += 0.001;  // Movimiento suave del campo de flujo
         }
 
         function touchStarted() {
@@ -93,7 +93,7 @@
             if (!audioStarted) {
                 userStartAudio().then(() => {
                     audioStarted = true;
-                    loop();  // Iniciar el bucle de dibujo
+                    loop();  // Comenzar el bucle de dibujo
                 }).catch((err) => {
                     console.log('Error al iniciar el audio: ', err);
                 });
@@ -184,14 +184,13 @@
         }
 
         function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);  // Asegurar que el canvas se redimensione correctamente en móviles
+            resizeCanvas(windowWidth, windowHeight);  // Ajustar el canvas en móviles
         }
 
         noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
 </body>
 </html>
-
 
 
 
