@@ -32,6 +32,8 @@
         let globalReverb;
         let combFilter;
         let cursorRadius = 30; // Radio de la bola negra que será el cursor
+        let lastFrequencyReset = 0;
+        let frequencyResetInterval = 30000; // 30 segundos
 
         function setup() {
             let canvas = createCanvas(windowWidth, windowHeight);
@@ -96,6 +98,12 @@
             fill(0);
             noStroke();
             ellipse(mouseX, mouseY, cursorRadius * 2, cursorRadius * 2);
+
+            // Cambiar rango de frecuencias cada 30 segundos
+            if (millis() - lastFrequencyReset > frequencyResetInterval) {
+                resetParticlesAndFrequencies();
+                lastFrequencyReset = millis();
+            }
         }
 
         function touchStarted() {
@@ -145,7 +153,7 @@
             let frequencies = [];
             let baseFreq = random(100, 400); // Frecuencia base aleatoria
             for (let i = 1; i <= 8; i++) {
-                // Usar relaciones armónicas no lineales
+                // Usar relaciones armónicas menos convencionales
                 let harmonicFreq = baseFreq * (Math.pow(2, i / random(8, 16))); // Relaciones menos tonales
                 frequencies.push(harmonicFreq);
             }
@@ -231,25 +239,30 @@
                     collisionVector.setMag(5);  // Ajustar la magnitud para un efecto más fuerte
                     this.applyForce(collisionVector);
 
-                    // Modulación aleatoria de la frecuencia según las coordenadas 3D
-                    let modulation = noise(this.pos.x * 0.01, this.pos.y * 0.01, zoff) * 200;
-                    this.oscillator.freq(this.baseFreq + modulation);
+                    // Modulación a frecuencias más agudas y granuladas durante la colisión
+                    let modulation = noise(this.pos.x * 0.05, this.pos.y * 0.05, zoff * 5) * 800; // Mayor modulación
+                    let newFreq = this.baseFreq + modulation;
+                    // Limitar la frecuencia para evitar saturación
+                    newFreq = constrain(newFreq, 100, 2000);
+                    this.oscillator.freq(newFreq);
 
                     // Asegurarse de que el oscilador esté sonando
                     if (!this.isPlaying) {
                         this.oscillator.start();
                         this.isPlaying = true;
-                        this.oscillator.amp(0.05, 0.1);  // Fade in rápido
+                        this.oscillator.amp(0.1, 0.05);  // Fade in rápido y amplitud mayor
                     }
 
-                    // Ajustar parámetros del filtro comb para efecto durante la colisión
-                    combFilter.delayTime(0.08);
+                    // Ajustar parámetros del filtro delay para efecto más granular
+                    combFilter.delayTime(0.02);
+                    combFilter.feedback(0.5);
                 } else {
                     // Volver a la frecuencia base
                     this.oscillator.freq(this.baseFreq);
 
                     // Volver al sonido suave cuando no colisiona
                     combFilter.delayTime(0.12);
+                    combFilter.feedback(0.15);
 
                     // Si el oscilador no debería sonar, detenerlo
                     if (!this.shouldPlaySound && this.isPlaying) {
@@ -304,6 +317,3 @@
     </script>
 </body>
 </html>
-
-
-
