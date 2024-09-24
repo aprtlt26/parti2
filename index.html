@@ -10,7 +10,7 @@
             padding: 0;
             overflow: hidden;
             background: rgb(129, 129, 129);
-              cursor: none; 
+            cursor: none; 
         }
         canvas {
             display: block;
@@ -44,14 +44,14 @@
 
             // Reverberación global
             globalReverb = new p5.Reverb();
-            globalReverb.set(2, 6);  // Reverberación suave y larga
+            globalReverb.set(1, 6);  // Reverberación suave y larga
 
-            // Filtro comb
+            // Filtro comb ajustado para un efecto más ambiental
             combFilter = new p5.Delay();
             combFilter.setType('comb');
-            combFilter.delayTime(0.07);  // Retardo perceptible pero corto
-            combFilter.feedback(0.3);    // Feedback moderado
-            combFilter.amp(0.3);         // Amplitud ajustada
+            combFilter.delayTime(0.12);  // Retardo ligeramente mayor para ambiente
+            combFilter.feedback(0.15);    // Feedback reducido para efecto sutil
+            combFilter.amp(0.1);         // Amplitud reducida para menor presencia
 
             // Crear las partículas
             for (let i = 0; i < 350; i++) {
@@ -59,6 +59,7 @@
             }
 
             background(0);  // Fondo completamente negro
+            noLoop();  // Pausar hasta que se inicie el audio
         }
 
         function draw() {
@@ -92,12 +93,20 @@
         }
 
         function touchStarted() {
-            startAudio();
+            if (!audioStarted) {
+                startAudio();
+            } else {
+                resetParticlesAndFrequencies();
+            }
             return false;  // Prevenir desplazamiento en pantallas móviles
         }
 
         function mousePressed() {
-            startAudio();
+            if (!audioStarted) {
+                startAudio();
+            } else {
+                resetParticlesAndFrequencies();
+            }
         }
 
         function startAudio() {
@@ -109,6 +118,30 @@
                     console.log('Error al iniciar el audio: ', err);
                 });
             }
+        }
+
+        function resetParticlesAndFrequencies() {
+            // Generar nuevas frecuencias armoniosas
+            let frequencies = generateHarmoniousFrequencies();
+            // Reiniciar las partículas y asignar nuevas frecuencias
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].reset();
+                let freq = frequencies[floor(random(frequencies.length))];
+                particles[i].baseFreq = freq;
+                particles[i].oscillator.freq(freq);
+            }
+        }
+
+        function generateHarmoniousFrequencies() {
+            let rootMidiNote = floor(random(48, 72)); // Nota raíz aleatoria entre C3 (48) y C5 (72)
+            let scaleIntervals = [0, 2, 4, 5, 7, 9, 11, 12]; // Intervalos de la escala mayor
+            let frequencies = [];
+            for (let i = 0; i < scaleIntervals.length; i++) {
+                let midiNote = rootMidiNote + scaleIntervals[i];
+                let freq = midiToFreq(midiNote);
+                frequencies.push(freq);
+            }
+            return frequencies;
         }
 
         class Particle {
@@ -199,13 +232,13 @@
                     this.oscillator.amp(0.05, 0);  // Amplitud fija durante la colisión
 
                     // Aumenta la granularidad cuando colisiona
-                    combFilter.delayTime(0.03);  // Sonido más granular durante la colisión
+                    combFilter.delayTime(0.08);  // Ajuste del delayTime para efecto más sutil
                 } else {
                     // Reducir la amplitud cuando está lejos del cursor
                     this.oscillator.amp(0.05, 0);  // Mantener amplitud constante
 
                     // Volver al sonido suave cuando no colisiona
-                    combFilter.delayTime(0.07);  // Sonido normal cuando no hay colisión
+                    combFilter.delayTime(0.12);  // Retardo ligeramente mayor para ambiente
 
                     // Si el oscilador no debería sonar, detenerlo
                     if (!this.shouldPlaySound && this.isPlaying) {
@@ -240,13 +273,27 @@
                 if (this.pos.y < 0) this.pos.y = height;
                 this.prevPos = this.pos.copy();
             }
+
+            reset() {
+                this.pos = createVector(random(width), random(height));
+                this.vel = createVector(0, 0);
+                this.acc = createVector(0, 0);
+                this.prevPos = this.pos.copy();
+
+                // Resetear propiedades relacionadas con el sonido
+                this.shouldPlaySound = random(1) < 0.15;
+                this.soundDuration = random(5000, 15000);
+                this.nextSoundTime = millis() + random(3000, 10000);
+            }
         }
 
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight);  // Ajustar el canvas en móviles
+            // Recalcular columnas y filas
+            cols = floor(width / scl);
+            rows = floor(height / scl);
+            flowfield = new Array(cols * rows);
         }
-
-        noLoop();  
     </script>
 </body>
 </html>
