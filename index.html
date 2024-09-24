@@ -47,7 +47,7 @@
             globalReverb = new p5.Reverb();
             globalReverb.set(1, 6);  // Reverberación suave y larga
 
-            // Filtro comb ajustado para un efecto más ambiental
+            // Filtro delay ajustado para un efecto más ambiental
             combFilter = new p5.Delay();
             combFilter.setType('delay');  // Usar delay normal para efecto más suave
             combFilter.delayTime(0.12);
@@ -129,23 +129,25 @@
         function resetParticlesAndFrequencies() {
             // Generar nuevas frecuencias armoniosas
             let frequencies = generateHarmoniousFrequencies();
-            // Reiniciar las partículas y asignar nuevas frecuencias
+            // Reiniciar las partículas y asignar nuevas frecuencias y paneo
             for (let i = 0; i < particles.length; i++) {
                 particles[i].reset();
                 let freq = frequencies[floor(random(frequencies.length))];
                 particles[i].baseFreq = freq;
                 particles[i].oscillator.freq(freq);
+                // Asignar paneo basado en la posición inicial de la partícula
+                let panValue = map(particles[i].pos.x, 0, width, -1, 1);
+                particles[i].oscillator.pan(panValue);
             }
         }
 
         function generateHarmoniousFrequencies() {
-            let rootMidiNote = floor(random(48, 72)); // Nota raíz aleatoria entre C3 (48) y C5 (72)
-            let scaleIntervals = [0, 2, 4, 5, 7, 9, 11, 12]; // Intervalos de la escala mayor
             let frequencies = [];
-            for (let i = 0; i < scaleIntervals.length; i++) {
-                let midiNote = rootMidiNote + scaleIntervals[i];
-                let freq = midiToFreq(midiNote);
-                frequencies.push(freq);
+            let baseFreq = random(100, 400); // Frecuencia base aleatoria
+            for (let i = 1; i <= 8; i++) {
+                // Usar relaciones armónicas no lineales
+                let harmonicFreq = baseFreq * (Math.pow(2, i / random(8, 16))); // Relaciones menos tonales
+                frequencies.push(harmonicFreq);
             }
             return frequencies;
         }
@@ -166,6 +168,10 @@
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
                 this.oscillator.connect(combFilter);  // Conectar el filtro comb
+
+                // Asignar paneo inicial basado en la posición
+                let panValue = map(this.pos.x, 0, width, -1, 1);
+                this.oscillator.pan(panValue);
 
                 this.shouldPlaySound = random(1) < 0.15;  // Sonido ocasional
                 this.soundDuration = random(5000, 15000);  // Duración del sonido
@@ -209,6 +215,10 @@
                     }
                     this.nextSoundTime = currentTime + random(3000, 10000);
                 }
+
+                // Actualizar paneo basado en la posición
+                let panValue = map(this.pos.x, 0, width, -1, 1);
+                this.oscillator.pan(panValue);
             }
 
             interactWithCursor(mx, my) {
@@ -277,6 +287,10 @@
                 this.shouldPlaySound = random(1) < 0.15;
                 this.soundDuration = random(5000, 15000);
                 this.nextSoundTime = millis() + random(3000, 10000);
+
+                // Asignar paneo inicial basado en la posición
+                let panValue = map(this.pos.x, 0, width, -1, 1);
+                this.oscillator.pan(panValue);
             }
         }
 
@@ -290,5 +304,6 @@
     </script>
 </body>
 </html>
+
 
 
