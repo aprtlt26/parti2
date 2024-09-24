@@ -2,15 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>aprtlt®art&psych</title>
-    <style>
-        body, html {
-            margin: 0;
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
     <title>aprtlt®art&psych</title>
     <style>
         body, html {
@@ -27,7 +18,7 @@
 </head>
 <body>
     <!-- Cargar p5.js y p5.sound.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
         let inc = 0.02;
@@ -36,7 +27,7 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 0.5;
+        let maxSpeed = 2;  // Incrementar la velocidad máxima para mayor efecto al ser golpeadas
         let audioStarted = false;
         let globalReverb;
         let combFilter;
@@ -58,10 +49,10 @@
 
             // Filtro comb ajustado para un efecto más ambiental
             combFilter = new p5.Delay();
-            combFilter.setType('comb');
-            combFilter.delayTime(0.12);  // Retardo ligeramente mayor para ambiente
-            combFilter.feedback(0.15);    // Feedback reducido para efecto sutil
-            combFilter.amp(0.1);         // Amplitud reducida para menor presencia
+            combFilter.setType('delay');  // Usar delay normal para efecto más suave
+            combFilter.delayTime(0.12);
+            combFilter.feedback(0.15);
+            combFilter.amp(0.1);
 
             // Crear las partículas
             for (let i = 0; i < 350; i++) {
@@ -75,7 +66,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(200, 10);  // Fondo con transparencia para efecto de estela
+            background(0, 10);  // Fondo con transparencia para efecto de estela
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -180,10 +171,6 @@
                 this.soundDuration = random(5000, 15000);  // Duración del sonido
                 this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
 
-                this.isTurquoise = random(1) < 0.3;
-                this.isBrightWhite = random(1) < 0.3;
-                this.isSoftWhite = random(1) < 0.3;
-
                 this.isPlaying = false;  // Estado para saber si el oscilador está sonando
             }
 
@@ -228,28 +215,14 @@
                 let mousePos = createVector(mx, my);
                 let distanceToMouse = dist(this.pos.x, this.pos.y, mousePos.x, mousePos.y);
 
-                if (distanceToMouse < cursorRadius + 5) {  // Si la partícula está cerca del cursor (ajustado con un margen)
+                if (distanceToMouse < cursorRadius) {
                     // Simular colisión como bolas de billar
-                    let collisionNormal = p5.Vector.sub(this.pos, mousePos);
-                    let distance = collisionNormal.mag();
-                    collisionNormal.normalize();
-
-                    // Evitar que las partículas se atasquen dentro del cursor
-                    let overlap = (cursorRadius + 5) - distance;
-                    this.pos.add(collisionNormal.mult(overlap));
-
-                    // Calcular la nueva velocidad después de la colisión
-                    let relativeVelocity = p5.Vector.sub(this.vel, createVector(0, 0));  // El cursor está estático
-                    let speedAlongNormal = relativeVelocity.dot(collisionNormal);
-
-                    if (speedAlongNormal < 0) {
-                        let restitution = 0.9;  // Coeficiente de restitución para simular elasticidad
-                        let impulse = -(1 + restitution) * speedAlongNormal;
-                        this.vel.add(collisionNormal.mult(impulse));
-                    }
+                    let collisionVector = p5.Vector.sub(this.pos, mousePos);
+                    collisionVector.setMag(5);  // Ajustar la magnitud para un efecto más fuerte
+                    this.applyForce(collisionVector);
 
                     // Modulación aleatoria de la frecuencia según las coordenadas 3D
-                    let modulation = noise(this.pos.x * 0.01, this.pos.y * 0.01, zoff) * 200;  // Modulación basada en ruido
+                    let modulation = noise(this.pos.x * 0.01, this.pos.y * 0.01, zoff) * 200;
                     this.oscillator.freq(this.baseFreq + modulation);
 
                     // Asegurarse de que el oscilador esté sonando
@@ -280,19 +253,8 @@
             }
 
             show() {
-                let brightness = map(this.vel.mag(), 0, maxSpeed, 100, 255);
-
-                if (this.isBrightWhite) {
-                    stroke(255, 255, 255, 255);
-                } else if (this.isSoftWhite) {
-                    stroke(255, 255, 255, 220);
-                } else if (this.isTurquoise) {
-                    stroke(64, 224, 208, brightness);
-                } else {
-                    stroke(brightness, brightness, brightness, 250);
-                }
-
-                strokeWeight(0.6);
+                stroke(255, 255, 255, 200);
+                strokeWeight(1);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
             }
@@ -328,6 +290,5 @@
     </script>
 </body>
 </html>
-
 
 
