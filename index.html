@@ -29,6 +29,7 @@
         let maxSpeed = 0.5;
         let audioStarted = false;
         let globalReverb;
+        let combFilter;  // Añadimos el filtro comb
 
         function setup() {
             // Crear el canvas con respecto a la pantalla, para móviles y desktop
@@ -42,10 +43,17 @@
             flowfield = new Array(cols * rows);
 
             globalReverb = new p5.Reverb();
-            globalReverb.set(12, 6);  // Reverb larga y envolvente
+            globalReverb.set(1, 6);  // Reverb larga y envolvente
+
+            // Crear el filtro comb
+            combFilter = new p5.Delay();
+            combFilter.setType('comb');
+            combFilter.delayTime(0.07);  // Retardo perceptible pero corto
+            combFilter.feedback(0.5);    // Feedback moderado para un efecto claro
+            combFilter.amp(0.3);         // Amplitud ajustada del filtro
 
             // Crear las partículas
-            for (let i = 0; i < 250; i++) {
+            for (let i = 0; i < 350; i++) {
                 particles[i] = new Particle();
             }
 
@@ -109,13 +117,14 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(50, 3000);  // Ampliación del rango de frecuencia
+                this.baseFreq = random(50, 600);  // Ampliación del rango de frecuencia
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);  // Comienza en silencio
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
+                this.oscillator.connect(combFilter);  // Conectar el filtro comb
 
                 this.shouldPlaySound = random(1) < 0.15;  // Sonido ocasional
                 this.soundDuration = random(5000, 15000);  // Duración variable del sonido
