@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: black;
+            background: rgb(129, 129, 129);
         }
         canvas {
             display: block;
@@ -29,41 +29,41 @@
         let maxSpeed = 0.5;
         let audioStarted = false;
         let globalReverb;
-        let combFilter;  // Añadimos el filtro comb
+        let combFilter;
 
         function setup() {
-            // Crear el canvas con respecto a la pantalla, para móviles y desktop
             let canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent(document.body);
 
-            pixelDensity(displayDensity()); // Ajustar la densidad de píxeles para dispositivos retina
+            pixelDensity(displayDensity());
 
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
+            // Reverberación global
             globalReverb = new p5.Reverb();
-            globalReverb.set(1, 6);  // Reverb larga y envolvente
+            globalReverb.set(1, 6);  // Reverberación suave y larga
 
-            // Crear el filtro comb
+            // Filtro comb
             combFilter = new p5.Delay();
             combFilter.setType('comb');
             combFilter.delayTime(0.07);  // Retardo perceptible pero corto
-            combFilter.feedback(0.5);    // Feedback moderado para un efecto claro
-            combFilter.amp(0.3);         // Amplitud ajustada del filtro
+            combFilter.feedback(0.5);    // Feedback moderado
+            combFilter.amp(0.3);         // Amplitud ajustada
 
             // Crear las partículas
             for (let i = 0; i < 350; i++) {
                 particles[i] = new Particle();
             }
 
-            background(0); // Fondo completamente negro
+            background(0);  // Fondo completamente negro
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); // Fondo negro con transparencia
+            background(40, 10);  // Fondo negro con transparencia
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -72,7 +72,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1);  // Movimiento más suave
+                    v.setMag(0.1);  // Movimiento suave
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -81,6 +81,7 @@
 
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
+                particles[i].interactWithCursor(mouseX, mouseY);  // Interacción con el cursor
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
@@ -117,22 +118,24 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(50, 600);  // Ampliación del rango de frecuencia
+                this.baseFreq = random(100, 600);  // Rango de frecuencia ajustado
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
-                this.oscillator.amp(0);  // Comienza en silencio
+                this.oscillator.amp(0);
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
                 this.oscillator.connect(combFilter);  // Conectar el filtro comb
 
                 this.shouldPlaySound = random(1) < 0.15;  // Sonido ocasional
-                this.soundDuration = random(5000, 15000);  // Duración variable del sonido
+                this.soundDuration = random(5000, 15000);  // Duración del sonido
                 this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
 
                 this.isTurquoise = random(1) < 0.3;
                 this.isBrightWhite = random(1) < 0.3;
                 this.isSoftWhite = random(1) < 0.3;
+
+                this.isPlaying = false;  // Estado para saber si el oscilador está sonando
             }
 
             follow(vectors) {
@@ -155,14 +158,59 @@
 
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
-                    this.oscillator.start();
-                    this.oscillator.amp(random(0.01, 0.03), 0.5);  // Volumen reducido
-                    setTimeout(() => {
-                        this.oscillator.amp(0, 1);  // Fade out
-                        setTimeout(() => this.oscillator.stop(), 1000);
-                    }, this.soundDuration - 1000);
+                    if (!this.isPlaying) {
+                        this.oscillator.start();
+                        this.oscillator.amp(0.05, 0.5);  // Aumentar amplitud general
+                        this.isPlaying = true;
 
+                        setTimeout(() => {
+                            this.oscillator.amp(0, 1);  // Suave fade out
+                            setTimeout(() => {
+                                this.oscillator.stop();
+                                this.isPlaying = false;
+                            }, 1000);
+                        }, this.soundDuration - 1000);
+                    }
                     this.nextSoundTime = currentTime + random(3000, 10000);
+                }
+            }
+
+            interactWithCursor(mx, my) {
+                let mousePos = createVector(mx, my);
+                let distanceToMouse = dist(this.pos.x, this.pos.y, mousePos.x, mousePos.y);
+
+                if (distanceToMouse < 100) {  // Si la partícula está cerca del cursor
+                    let dir = p5.Vector.sub(this.pos, mousePos);
+                    dir.setMag(1.5);  // Magnitud para simular el choque fuerte
+                    this.applyForce(dir);
+
+                    // Cambiar el sonido a granular durante la colisión
+                    let distanceMod = map(distanceToMouse, 0, 100, 200, 500);
+                    this.oscillator.freq(this.baseFreq + distanceMod);
+
+                    // Asegurarse de que el oscilador esté sonando
+                    if (!this.isPlaying) {
+                        this.oscillator.start();
+                        this.isPlaying = true;
+                    }
+
+                    // Mantener la amplitud constante para evitar crescendos
+                    this.oscillator.amp(0.05, 0);  // Amplitud fija durante la colisión
+
+                    // Aumenta la granularidad cuando colisiona
+                    combFilter.delayTime(0.03);  // Sonido más granular durante la colisión
+                } else {
+                    // Reducir la amplitud cuando está lejos del cursor
+                    this.oscillator.amp(0.05, 0);  // Mantener amplitud constante
+
+                    // Volver al sonido suave cuando no colisiona
+                    combFilter.delayTime(0.07);  // Sonido normal cuando no hay colisión
+
+                    // Si el oscilador no debería sonar, detenerlo
+                    if (!this.shouldPlaySound && this.isPlaying) {
+                        this.oscillator.stop();
+                        this.isPlaying = false;
+                    }
                 }
             }
 
@@ -196,6 +244,11 @@
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight);  // Ajustar el canvas en móviles
         }
+
+        noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
+    </script>
+</body>
+</html>
 
         noLoop();  // Evitar que el draw se ejecute hasta que el usuario interactúe
     </script>
