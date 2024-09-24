@@ -7,6 +7,14 @@
     <style>
         body, html {
             margin: 0;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>aprtlt®art&psych</title>
+    <style>
+        body, html {
+            margin: 0;
             padding: 0;
             overflow: hidden;
             background: rgb(129, 129, 129);
@@ -18,6 +26,7 @@
     </style>
 </head>
 <body>
+    <!-- Cargar p5.js y p5.sound.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
@@ -31,6 +40,7 @@
         let audioStarted = false;
         let globalReverb;
         let combFilter;
+        let cursorRadius = 30; // Radio de la bola negra que será el cursor
 
         function setup() {
             let canvas = createCanvas(windowWidth, windowHeight);
@@ -65,7 +75,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(200, 10);  // Fondo negro con transparencia
+            background(200, 10);  // Fondo con transparencia para efecto de estela
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -90,6 +100,11 @@
             }
 
             zoff += 0.001;  // Movimiento suave del campo de flujo
+
+            // Dibujar la bola negra como cursor
+            fill(0);
+            noStroke();
+            ellipse(mouseX, mouseY, cursorRadius * 2, cursorRadius * 2);
         }
 
         function touchStarted() {
@@ -213,37 +228,53 @@
                 let mousePos = createVector(mx, my);
                 let distanceToMouse = dist(this.pos.x, this.pos.y, mousePos.x, mousePos.y);
 
-                if (distanceToMouse < 100) {  // Si la partícula está cerca del cursor
-                    let dir = p5.Vector.sub(this.pos, mousePos);
-                    dir.setMag(1.5);  // Magnitud para simular el choque fuerte
-                    this.applyForce(dir);
+                if (distanceToMouse < cursorRadius + 5) {  // Si la partícula está cerca del cursor (ajustado con un margen)
+                    // Simular colisión como bolas de billar
+                    let collisionNormal = p5.Vector.sub(this.pos, mousePos);
+                    let distance = collisionNormal.mag();
+                    collisionNormal.normalize();
 
-                    // Cambiar el sonido a granular durante la colisión
-                    let distanceMod = map(distanceToMouse, 0, 100, 200, 500);
-                    this.oscillator.freq(this.baseFreq + distanceMod);
+                    // Evitar que las partículas se atasquen dentro del cursor
+                    let overlap = (cursorRadius + 5) - distance;
+                    this.pos.add(collisionNormal.mult(overlap));
+
+                    // Calcular la nueva velocidad después de la colisión
+                    let relativeVelocity = p5.Vector.sub(this.vel, createVector(0, 0));  // El cursor está estático
+                    let speedAlongNormal = relativeVelocity.dot(collisionNormal);
+
+                    if (speedAlongNormal < 0) {
+                        let restitution = 0.9;  // Coeficiente de restitución para simular elasticidad
+                        let impulse = -(1 + restitution) * speedAlongNormal;
+                        this.vel.add(collisionNormal.mult(impulse));
+                    }
+
+                    // Modulación aleatoria de la frecuencia según las coordenadas 3D
+                    let modulation = noise(this.pos.x * 0.01, this.pos.y * 0.01, zoff) * 200;  // Modulación basada en ruido
+                    this.oscillator.freq(this.baseFreq + modulation);
 
                     // Asegurarse de que el oscilador esté sonando
                     if (!this.isPlaying) {
                         this.oscillator.start();
                         this.isPlaying = true;
+                        this.oscillator.amp(0.05, 0.1);  // Fade in rápido
                     }
 
-                    // Mantener la amplitud constante para evitar crescendos
-                    this.oscillator.amp(0.05, 0);  // Amplitud fija durante la colisión
-
-                    // Aumenta la granularidad cuando colisiona
-                    combFilter.delayTime(0.08);  // Ajuste del delayTime para efecto más sutil
+                    // Ajustar parámetros del filtro comb para efecto durante la colisión
+                    combFilter.delayTime(0.08);
                 } else {
-                    // Reducir la amplitud cuando está lejos del cursor
-                    this.oscillator.amp(0.05, 0);  // Mantener amplitud constante
+                    // Volver a la frecuencia base
+                    this.oscillator.freq(this.baseFreq);
 
                     // Volver al sonido suave cuando no colisiona
-                    combFilter.delayTime(0.12);  // Retardo ligeramente mayor para ambiente
+                    combFilter.delayTime(0.12);
 
                     // Si el oscilador no debería sonar, detenerlo
                     if (!this.shouldPlaySound && this.isPlaying) {
-                        this.oscillator.stop();
-                        this.isPlaying = false;
+                        this.oscillator.amp(0, 0.5);  // Fade out suave
+                        setTimeout(() => {
+                            this.oscillator.stop();
+                            this.isPlaying = false;
+                        }, 500);
                     }
                 }
             }
@@ -297,10 +328,6 @@
     </script>
 </body>
 </html>
-
-
-
-
 
 
 
