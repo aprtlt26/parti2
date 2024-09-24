@@ -44,13 +44,13 @@
 
             // Reverberación global
             globalReverb = new p5.Reverb();
-            globalReverb.set(1, 6);  // Reverberación suave y larga
+            globalReverb.set(2, 6);  // Reverberación suave y larga
 
             // Filtro comb
             combFilter = new p5.Delay();
             combFilter.setType('comb');
             combFilter.delayTime(0.07);  // Retardo perceptible pero corto
-            combFilter.feedback(0.5);    // Feedback moderado
+            combFilter.feedback(0.3);    // Feedback moderado
             combFilter.amp(0.3);         // Amplitud ajustada
 
             // Crear las partículas
