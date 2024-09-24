@@ -34,6 +34,9 @@
         let cursorRadius = 30; // Radio de la bola negra que será el cursor
         let lastFrequencyReset = 0;
         let frequencyResetInterval = 30000; // 30 segundos
+        let frequencyTransitionDuration = 10000; // 10 segundos para la transición
+        let frequencyTransitionStart = 0;
+        let transitioningFrequencies = false;
 
         function setup() {
             let canvas = createCanvas(windowWidth, windowHeight);
@@ -99,10 +102,15 @@
             noStroke();
             ellipse(mouseX, mouseY, cursorRadius * 2, cursorRadius * 2);
 
-            // Cambiar rango de frecuencias cada 30 segundos
-            if (millis() - lastFrequencyReset > frequencyResetInterval) {
-                resetParticlesAndFrequencies();
+            // Iniciar transición de frecuencias cada 30 segundos
+            if (millis() - lastFrequencyReset > frequencyResetInterval && !transitioningFrequencies) {
+                initiateFrequencyTransition();
                 lastFrequencyReset = millis();
+            }
+
+            // Si estamos en transición, actualizar las frecuencias gradualmente
+            if (transitioningFrequencies) {
+                updateFrequenciesTransition();
             }
         }
 
@@ -110,7 +118,7 @@
             if (!audioStarted) {
                 startAudio();
             } else {
-                resetParticlesAndFrequencies();
+                initiateFrequencyTransition();
             }
             return false;  // Prevenir desplazamiento en pantallas móviles
         }
@@ -119,7 +127,7 @@
             if (!audioStarted) {
                 startAudio();
             } else {
-                resetParticlesAndFrequencies();
+                initiateFrequencyTransition();
             }
         }
 
@@ -134,18 +142,33 @@
             }
         }
 
-        function resetParticlesAndFrequencies() {
+        // Iniciar la transición de frecuencias
+        function initiateFrequencyTransition() {
             // Generar nuevas frecuencias armoniosas
-            let frequencies = generateHarmoniousFrequencies();
-            // Reiniciar las partículas y asignar nuevas frecuencias y paneo
+            let newFrequencies = generateHarmoniousFrequencies();
+
+            // Asignar las nuevas frecuencias objetivo a las partículas
             for (let i = 0; i < particles.length; i++) {
-                particles[i].reset();
-                let freq = frequencies[floor(random(frequencies.length))];
-                particles[i].baseFreq = freq;
-                particles[i].oscillator.freq(freq);
-                // Asignar paneo basado en la posición inicial de la partícula
-                let panValue = map(particles[i].pos.x, 0, width, -1, 1);
-                particles[i].oscillator.pan(panValue);
+                particles[i].startFrequencyTransition(newFrequencies[floor(random(newFrequencies.length))]);
+            }
+
+            // Marcar el inicio de la transición
+            frequencyTransitionStart = millis();
+            transitioningFrequencies = true;
+        }
+
+        // Actualizar las frecuencias durante la transición
+        function updateFrequenciesTransition() {
+            let elapsedTime = millis() - frequencyTransitionStart;
+            let t = elapsedTime / frequencyTransitionDuration;
+
+            if (t >= 1) {
+                t = 1;
+                transitioningFrequencies = false;  // Finalizar la transición
+            }
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].updateFrequency(t);
             }
         }
 
@@ -168,7 +191,10 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 600);  // Rango de frecuencia ajustado
+                this.baseFreq = random(100, 600);  // Frecuencia actual
+                this.targetFreq = this.baseFreq;   // Frecuencia objetivo
+                this.startFreq = this.baseFreq;    // Frecuencia al inicio de la transición
+
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
                 this.oscillator.amp(0);
@@ -229,11 +255,30 @@
                 this.oscillator.pan(panValue);
             }
 
+            // Iniciar la transición de frecuencia para esta partícula
+            startFrequencyTransition(newFreq) {
+                this.startFreq = this.baseFreq;
+                this.targetFreq = newFreq;
+            }
+
+            // Actualizar la frecuencia durante la transición
+            updateFrequency(t) {
+                // Interpolación suave (easing)
+                let easedT = t * t * (3 - 2 * t);  // Función de suavizado
+
+                this.baseFreq = lerp(this.startFreq, this.targetFreq, easedT);
+                if (!this.isColliding) {
+                    this.oscillator.freq(this.baseFreq);
+                }
+            }
+
             interactWithCursor(mx, my) {
                 let mousePos = createVector(mx, my);
                 let distanceToMouse = dist(this.pos.x, this.pos.y, mousePos.x, mousePos.y);
 
                 if (distanceToMouse < cursorRadius) {
+                    this.isColliding = true;
+
                     // Simular colisión como bolas de billar
                     let collisionVector = p5.Vector.sub(this.pos, mousePos);
                     collisionVector.setMag(5);  // Ajustar la magnitud para un efecto más fuerte
@@ -257,6 +302,8 @@
                     combFilter.delayTime(0.02);
                     combFilter.feedback(0.5);
                 } else {
+                    this.isColliding = false;
+
                     // Volver a la frecuencia base
                     this.oscillator.freq(this.baseFreq);
 
@@ -304,6 +351,10 @@
                 // Asignar paneo inicial basado en la posición
                 let panValue = map(this.pos.x, 0, width, -1, 1);
                 this.oscillator.pan(panValue);
+
+                // Reiniciar frecuencias para la transición
+                this.startFreq = this.baseFreq;
+                this.targetFreq = this.baseFreq;
             }
         }
 
@@ -317,3 +368,4 @@
     </script>
 </body>
 </html>
+
