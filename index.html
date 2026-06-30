@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>aprtlt®art&psych</title>
+    <title>aprtlt®art&psych 3D</title>
     <style>
         body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: rgb(129, 129, 129);
+            background: rgb(12, 60, 252);
             cursor: none; 
         }
         canvas {
@@ -27,16 +27,133 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 2;  
+        let maxSpeed = 2.5;
         let audioStarted = false;
         let globalReverb;
         let combFilter;
-        let cursorRadius = 30; 
+        let cursorRadius = 30;
         let lastFrequencyReset = 0;
-        let frequencyResetInterval = 30000; 
-        let frequencyTransitionDuration = 10000; 
+        let frequencyResetInterval = 30000;
+        let frequencyTransitionDuration = 10000;
         let frequencyTransitionStart = 0;
         let transitioningFrequencies = false;
+
+        let masterVolume = 0.8;
+        let isMuted = false;
+
+        let audioCtx = null;
+        let masterGainNode = null;
+        let listenerRotX = 0;
+        let listenerRotY = 0;
+
+        function initSpatialAudio() {
+            try {
+                audioCtx = getAudioContext();
+                if (!audioCtx) return;
+                
+                masterGainNode = audioCtx.createGain();
+                masterGainNode.gain.value = 0.8;
+                masterGainNode.connect(audioCtx.destination);
+                
+                if (audioCtx.listener) {
+                    audioCtx.listener.positionX.value = 0;
+                    audioCtx.listener.positionY.value = 0;
+                    audioCtx.listener.positionZ.value = 0;
+                    audioCtx.listener.forwardX.value = 0;
+                    audioCtx.listener.forwardY.value = 0;
+                    audioCtx.listener.forwardZ.value = -1;
+                    audioCtx.listener.upX.value = 0;
+                    audioCtx.listener.upY.value = 1;
+                    audioCtx.listener.upZ.value = 0;
+                }
+            } catch(e) {
+                console.warn('Error al iniciar audio 3D:', e);
+            }
+        }
+
+        function updateListenerOrientation(mx, my) {
+            if (!audioCtx || !audioCtx.listener) return;
+            
+            let targetRotY = map(mx, 0, width, -0.8, 0.8);
+            let targetRotX = map(my, 0, height, 0.2, -0.2);
+            listenerRotX += (targetRotX - listenerRotX) * 0.03;
+            listenerRotY += (targetRotY - listenerRotY) * 0.03;
+            
+            try {
+                let fwdX = -Math.sin(listenerRotY);
+                let fwdZ = -Math.cos(listenerRotY);
+                let fwdY = Math.sin(listenerRotX) * 0.1;
+                let fwdLen = Math.sqrt(fwdX*fwdX + fwdY*fwdY + fwdZ*fwdZ);
+                if (fwdLen > 0) { fwdX /= fwdLen; fwdY /= fwdLen; fwdZ /= fwdLen; }
+                
+                let upX = Math.sin(listenerRotX) * 0.15;
+                let upY = 0.9;
+                let upZ = 0;
+                
+                audioCtx.listener.forwardX.value = fwdX;
+                audioCtx.listener.forwardY.value = fwdY;
+                audioCtx.listener.forwardZ.value = fwdZ;
+                audioCtx.listener.upX.value = upX;
+                audioCtx.listener.upY.value = upY;
+                audioCtx.listener.upZ.value = upZ;
+            } catch(e) {}
+        }
+
+        function connectOscillatorToPanner(osc, index) {
+            if (!audioCtx) return;
+            
+            let panner = audioCtx.createPanner();
+            panner.panningModel = 'HRTF';
+            panner.distanceModel = 'inverse';
+            panner.refDistance = 1.5;
+            panner.maxDistance = 50;
+            panner.rolloffFactor = 0.8;
+            panner.coneInnerAngle = 360;
+            panner.coneOuterAngle = 0;
+            panner.coneOuterGain = 0;
+            
+
+            let angle = (index / 350) * TWO_PI * 3;
+            let radius = 3 + random(0, 6);
+            panner.positionX.value = Math.cos(angle) * radius * 0.5;
+            panner.positionY.value = Math.sin(angle * 0.7) * 3;
+            panner.positionZ.value = Math.sin(angle) * radius * 0.3 + 10;
+            
+            if (masterGainNode) {
+                panner.connect(masterGainNode);
+            } else {
+                panner.connect(audioCtx.destination);
+            }
+            
+            try {
+                if (osc._gainNode) {
+                    osc._gainNode.disconnect();
+                    osc._gainNode.connect(panner);
+                } else {
+                    osc.disconnect();
+                    osc.connect(panner);
+                }
+            } catch(e) {
+                try {
+                    osc.disconnect();
+                    osc.connect(panner);
+                } catch(e2) {}
+            }
+            
+            return panner;
+        }
+
+        function updatePannerPosition(panner, x, y, z) {
+            if (!panner) return;
+            try {
+                panner.positionX.value = x;
+                panner.positionY.value = y;
+                panner.positionZ.value = z;
+            } catch(e) {
+                try { panner.setPosition(x, y, z); } catch(e2) {}
+            }
+        }
+
 
         function setup() {
             let canvas = createCanvas(windowWidth, windowHeight);
@@ -48,28 +165,35 @@
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
 
-            // Reverberación global
+            initSpatialAudio();
+
             globalReverb = new p5.Reverb();
-            globalReverb.set(1, 6); 
+            globalReverb.set(1, 6);
 
             combFilter = new p5.Delay();
-            combFilter.setType('delay');  
+            combFilter.setType('delay');
             combFilter.delayTime(0.12);
             combFilter.feedback(0.15);
             combFilter.amp(0.1);
 
             for (let i = 0; i < 350; i++) {
-                particles[i] = new Particle();
+                particles[i] = new Particle(i);
             }
 
-            background(0);  
-            noLoop();  
+            background(12, 60, 252);
+            noLoop();
+            
+            initUI();
         }
 
+     
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10); 
+            updateListenerOrientation(mouseX, mouseY);
+
+            // Fondo azul hyperlink
+            background(12, 60, 252);
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -78,7 +202,7 @@
                     let index = x + y * cols;
                     let angle = noise(xoff, yoff, zoff) * TWO_PI;
                     let v = p5.Vector.fromAngle(angle);
-                    v.setMag(0.1);  // Movimiento suave
+                    v.setMag(0.1);
                     flowfield[index] = v;
                     xoff += inc;
                 }
@@ -87,38 +211,41 @@
 
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
-                particles[i].interactWithCursor(mouseX, mouseY);  
+                particles[i].interactWithCursor(mouseX, mouseY);
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
             }
 
-            zoff += 0.001;  // Movimiento suave del campo de flujo
+            zoff += 0.001;
 
-            // Dibujar la bola negra como cursor
-            fill(0);
+            // Cursor
+            fill(255, 255, 255, 30);
             noStroke();
             ellipse(mouseX, mouseY, cursorRadius * 2, cursorRadius * 2);
+            fill(255, 255, 255, 80);
+            ellipse(mouseX, mouseY, cursorRadius * 0.5, cursorRadius * 0.5);
 
-            // Iniciar transición de frecuencias cada 30 segundos
             if (millis() - lastFrequencyReset > frequencyResetInterval && !transitioningFrequencies) {
                 initiateFrequencyTransition();
                 lastFrequencyReset = millis();
             }
 
-            // Si estamos en transición, actualizar las frecuencias gradualmente
             if (transitioningFrequencies) {
                 updateFrequenciesTransition();
             }
         }
 
+        // ============================================================
+        // EVENTOS
+        // ============================================================
         function touchStarted() {
             if (!audioStarted) {
                 startAudio();
             } else {
                 initiateFrequencyTransition();
             }
-            return false;  // Prevenir desplazamiento en pantallas móviles
+            return false;
         }
 
         function mousePressed() {
@@ -133,38 +260,35 @@
             if (!audioStarted) {
                 userStartAudio().then(() => {
                     audioStarted = true;
-                    loop();  // Comenzar el bucle de dibujo
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                    loop();
                 }).catch((err) => {
                     console.log('Error al iniciar el audio: ', err);
                 });
             }
         }
 
-        // Iniciar la transición de frecuencias
+        // ============================================================
+        // TRANSICIONES DE FRECUENCIA
+        // ============================================================
         function initiateFrequencyTransition() {
-            // Generar nuevas frecuencias armoniosas
             let newFrequencies = generateHarmoniousFrequencies();
-
-            // Asignar las nuevas frecuencias objetivo a las partículas
             for (let i = 0; i < particles.length; i++) {
                 particles[i].startFrequencyTransition(newFrequencies[floor(random(newFrequencies.length))]);
             }
-
-            // Marcar el inicio de la transición
             frequencyTransitionStart = millis();
             transitioningFrequencies = true;
         }
 
-        // Actualizar las frecuencias durante la transición
         function updateFrequenciesTransition() {
             let elapsedTime = millis() - frequencyTransitionStart;
             let t = elapsedTime / frequencyTransitionDuration;
-
             if (t >= 1) {
                 t = 1;
-                transitioningFrequencies = false;  // Finalizar la transición
+                transitioningFrequencies = false;
             }
-
             for (let i = 0; i < particles.length; i++) {
                 particles[i].updateFrequency(t);
             }
@@ -172,26 +296,33 @@
 
         function generateHarmoniousFrequencies() {
             let frequencies = [];
-            let baseFreq = random(100, 400); // Frecuencia base aleatoria
+            let baseFreq = random(100, 400);
             for (let i = 1; i <= 8; i++) {
-                // Usar relaciones armónicas menos convencionales
-                let harmonicFreq = baseFreq * (Math.pow(2, i / random(8, 16))); // Relaciones menos tonales
+                let harmonicFreq = baseFreq * (Math.pow(2, i / random(8, 16)));
                 frequencies.push(harmonicFreq);
             }
             return frequencies;
         }
 
+        // ============================================================
+        // PARTICLE - Partículas blancas que salen de la pantalla en 3D
+        // ============================================================
         class Particle {
-            constructor() {
+            constructor(id) {
+                this.id = id;
                 this.pos = createVector(random(width), random(height));
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                this.baseFreq = random(100, 600);  // Frecuencia actual
-                this.targetFreq = this.baseFreq;   // Frecuencia objetivo
-                this.startFreq = this.baseFreq;    // Frecuencia al inicio de la transición
+                // Profundidad 3D (eje Z) - salen de la pantalla
+                this.depthZ = random(2, 18);
+                this.targetDepthZ = this.depthZ;
+
+                this.baseFreq = random(100, 600);
+                this.targetFreq = this.baseFreq;
+                this.startFreq = this.baseFreq;
 
                 this.oscillator = new p5.Oscillator('sine');
                 this.oscillator.freq(this.baseFreq);
@@ -199,17 +330,28 @@
 
                 this.oscillator.disconnect();
                 this.oscillator.connect(globalReverb);
-                this.oscillator.connect(combFilter);  // Conectar el filtro comb
+                this.oscillator.connect(combFilter);
 
-                // Asignar paneo inicial basado en la posición
-                let panValue = map(this.pos.x, 0, width, -1, 1);
-                this.oscillator.pan(panValue);
+                this.panner = connectOscillatorToPanner(this.oscillator, id);
 
-                this.shouldPlaySound = random(1) < 0.15;  // Sonido ocasional
-                this.soundDuration = random(5000, 15000);  // Duración del sonido
-                this.nextSoundTime = millis() + random(3000, 10000);  // Tiempo hasta que suene nuevamente
+                let angle3d = (id / 350) * TWO_PI * 3;
+                let radius3d = 3 + random(0, 5);
+                this.x3d = Math.cos(angle3d) * radius3d * 0.5;
+                this.y3d = Math.sin(angle3d * 0.7) * 3;
+                this.z3d = Math.sin(angle3d) * radius3d * 0.3 + 10;
+                this.targetX3d = this.x3d;
+                this.targetY3d = this.y3d;
+                this.targetZ3d = this.z3d;
 
-                this.isPlaying = false;  // Estado para saber si el oscilador está sonando
+                if (this.panner) {
+                    updatePannerPosition(this.panner, this.x3d, this.y3d, this.z3d);
+                }
+
+                this.shouldPlaySound = random(1) < 0.15;
+                this.soundDuration = random(5000, 15000);
+                this.nextSoundTime = millis() + random(3000, 10000);
+                this.isPlaying = false;
+                this.isColliding = false;
             }
 
             follow(vectors) {
@@ -217,7 +359,7 @@
                 let y = floor(this.pos.y / scl);
                 let index = x + y * cols;
                 let force = vectors[index];
-                this.applyForce(force);
+                if (force) this.applyForce(force);
             }
 
             applyForce(force) {
@@ -230,15 +372,32 @@
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
+                // Posición 3D: las partículas salen de la pantalla (Z positivo)
+                this.targetX3d = map(this.pos.x, 0, width, -8, 8);
+                this.targetY3d = map(this.pos.y, 0, height, 6, -6);
+                
+                // Z: más abajo en pantalla = más cerca (sale de la pantalla)
+                let zWave = sin(this.pos.y * 0.015 + this.id * 0.1) * 3;
+                this.targetZ3d = map(this.pos.y, 0, height, 16, 3) + zWave;
+                this.depthZ = this.targetZ3d;
+
+                this.x3d += (this.targetX3d - this.x3d) * 0.05;
+                this.y3d += (this.targetY3d - this.y3d) * 0.05;
+                this.z3d += (this.targetZ3d - this.z3d) * 0.05;
+
+                if (this.panner) {
+                    updatePannerPosition(this.panner, this.x3d, this.y3d, this.z3d);
+                }
+
                 let currentTime = millis();
                 if (this.shouldPlaySound && currentTime >= this.nextSoundTime) {
                     if (!this.isPlaying) {
                         this.oscillator.start();
-                        this.oscillator.amp(0.05, 0.5);  // Aumentar amplitud general
+                        this.oscillator.amp(0.05 * masterVolume, 0.5);
                         this.isPlaying = true;
 
                         setTimeout(() => {
-                            this.oscillator.amp(0, 1);  // Suave fade out
+                            this.oscillator.amp(0, 1);
                             setTimeout(() => {
                                 this.oscillator.stop();
                                 this.isPlaying = false;
@@ -247,23 +406,15 @@
                     }
                     this.nextSoundTime = currentTime + random(3000, 10000);
                 }
-
-                // Actualizar paneo basado en la posición
-                let panValue = map(this.pos.x, 0, width, -1, 1);
-                this.oscillator.pan(panValue);
             }
 
-            // Iniciar la transición de frecuencia para esta partícula
             startFrequencyTransition(newFreq) {
                 this.startFreq = this.baseFreq;
                 this.targetFreq = newFreq;
             }
 
-            // Actualizar la frecuencia durante la transición
             updateFrequency(t) {
-                // Interpolación suave (easing)
-                let easedT = t * t * (3 - 2 * t);  // Función de suavizado
-
+                let easedT = t * t * (3 - 2 * t);
                 this.baseFreq = lerp(this.startFreq, this.targetFreq, easedT);
                 if (!this.isColliding) {
                     this.oscillator.freq(this.baseFreq);
@@ -277,41 +428,44 @@
                 if (distanceToMouse < cursorRadius) {
                     this.isColliding = true;
 
-                    // Simular colisión como bolas de billar
                     let collisionVector = p5.Vector.sub(this.pos, mousePos);
-                    collisionVector.setMag(5);  // Ajustar la magnitud para un efecto más fuerte
+                    collisionVector.setMag(6);
                     this.applyForce(collisionVector);
 
-                    // Modulación a frecuencias más agudas y granuladas durante la colisión
-                    let modulation = noise(this.pos.x * 0.05, this.pos.y * 0.05, zoff * 5) * 800; // Mayor modulación
+                    let modulation = noise(this.pos.x * 0.05, this.pos.y * 0.05, zoff * 5) * 800;
                     let newFreq = this.baseFreq + modulation;
-                    // Limitar la frecuencia para evitar saturación
                     newFreq = constrain(newFreq, 100, 2000);
                     this.oscillator.freq(newFreq);
 
-                    // Asegurarse de que el oscilador esté sonando
                     if (!this.isPlaying) {
                         this.oscillator.start();
                         this.isPlaying = true;
-                        this.oscillator.amp(0.1, 0.05);  // Fade in rápido y amplitud mayor
+                        this.oscillator.amp(0.12 * masterVolume, 0.05);
                     }
 
-                    // Ajustar parámetros del filtro delay para efecto más granular
+                    // Efecto 3D: la partícula sale más de la pantalla al interactuar
+                    let distFactor = 1 - (distanceToMouse / cursorRadius);
+                    let pushZ = distFactor * 8;
+                    if (this.panner) {
+                        let newZ = this.z3d + pushZ * 0.8;
+                        updatePannerPosition(this.panner, this.x3d, this.y3d, Math.min(22, newZ));
+                    }
+
                     combFilter.delayTime(0.02);
                     combFilter.feedback(0.5);
                 } else {
                     this.isColliding = false;
-
-                    // Volver a la frecuencia base
                     this.oscillator.freq(this.baseFreq);
 
-                    // Volver al sonido suave cuando no colisiona
+                    if (this.panner) {
+                        updatePannerPosition(this.panner, this.x3d, this.y3d, this.z3d);
+                    }
+
                     combFilter.delayTime(0.12);
                     combFilter.feedback(0.15);
 
-                    // Si el oscilador no debería sonar, detenerlo
                     if (!this.shouldPlaySound && this.isPlaying) {
-                        this.oscillator.amp(0, 0.5);  // Fade out suave
+                        this.oscillator.amp(0, 0.5);
                         setTimeout(() => {
                             this.oscillator.stop();
                             this.isPlaying = false;
@@ -321,10 +475,24 @@
             }
 
             show() {
-                stroke(255, 255, 255, 200);
-                strokeWeight(1);
+                // Partículas blancas con brillo según profundidad
+                let brightness = map(this.z3d, 2, 20, 150, 255);
+                let alpha = map(this.z3d, 2, 20, 100, 220);
+                
+                stroke(255, 255, 255, brightness * 0.6);
+                strokeWeight(1.5);
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
+
+                // Tamaño según profundidad: más cerca = más grande
+                let size = map(this.z3d, 2, 20, 1.5, 5);
+                noStroke();
+                fill(255, 255, 255, alpha);
+                ellipse(this.pos.x, this.pos.y, size, size);
+                
+                // Brillo adicional en el centro
+                fill(255, 255, 255, alpha * 0.3);
+                ellipse(this.pos.x, this.pos.y, size * 2.5, size * 2.5);
             }
 
             edges() {
@@ -340,28 +508,370 @@
                 this.vel = createVector(0, 0);
                 this.acc = createVector(0, 0);
                 this.prevPos = this.pos.copy();
-
-                // Resetear propiedades relacionadas con el sonido
                 this.shouldPlaySound = random(1) < 0.15;
                 this.soundDuration = random(5000, 15000);
                 this.nextSoundTime = millis() + random(3000, 10000);
-
-                // Asignar paneo inicial basado en la posición
-                let panValue = map(this.pos.x, 0, width, -1, 1);
-                this.oscillator.pan(panValue);
-
-                // Reiniciar frecuencias para la transición
                 this.startFreq = this.baseFreq;
                 this.targetFreq = this.baseFreq;
             }
         }
 
         function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);  // Ajustar el canvas en móviles
-            // Recalcular columnas y filas
+            resizeCanvas(windowWidth, windowHeight);
             cols = floor(width / scl);
             rows = floor(height / scl);
             flowfield = new Array(cols * rows);
+        }
+
+        // ============================================================
+        // UI - INTERFAZ COMPLETA
+        // ============================================================
+        function initUI() {
+            
+            const telesmaDiv = document.createElement('div');
+            telesmaDiv.id = 'telesmaInfo';
+            telesmaDiv.innerHTML = `
+                <div class="telesma-header">
+                    <span class="telesma-symbol">◈</span>
+                    <span class="telesma-title">TELESMA 3D</span>
+                </div>
+                <div class="telesma-body">
+                    <p>Flujos sonoros en espacio tridimensional. Las partículas emergen de la pantalla en profundidad (eje Z).</p>
+                    <p class="telesma-author">Alfonso Pretelt — psicólogo, músico experimental & desarrollador</p>
+                </div>
+                <span class="telesma-close" id="closeTelesma">✕</span>
+            `;
+            document.body.appendChild(telesmaDiv);
+
+            const binauralBtn = document.createElement('button');
+            binauralBtn.id = 'binauralBtn';
+            binauralBtn.innerHTML = '🎧';
+            binauralBtn.setAttribute('aria-label', 'Información sobre escucha binaural 3D');
+            document.body.appendChild(binauralBtn);
+
+            const ui = document.createElement('div');
+            ui.id = 'audioUI';
+            ui.innerHTML = `
+                <button id="muteBtn">M</button>
+                <input type="range" id="masterSlider" min="0" max="2" step="0.01" value="0.8">
+            `;
+            document.body.appendChild(ui);
+
+            const overlay = document.createElement('div');
+            overlay.id = 'binauralOverlay';
+            overlay.innerHTML = `
+                <div class="binaural-modal">
+                    <div class="icon">🎧</div>
+                    <h2>◈ escucha inmersiva 3D</h2>
+                    <p>Esta obra utiliza <strong>HRTF</strong> (Head-Related Transfer Function) para crear un campo sonoro tridimensional.</p>
+                    <p style="font-size:14px;color:rgba(255,255,255,0.5);margin-top:4px;">Se recomienda utilizar auriculares.</p>
+                    <div class="features">
+                        <span>◈ campo sonoro 3D</span>
+                        <span>⟷ profundidad Z</span>
+                        <span>↕ elevación</span>
+                        <span>⟳ rotación</span>
+                        <span>🎧 HRTF</span>
+                    </div>
+                    <p style="font-size:11px;color:rgba(255,255,255,0.3);">
+                        Las partículas se mueven en profundidad (eje Z) saliendo de la pantalla.
+                    </p>
+                    <button class="close-btn" id="closeBinaural">⟡ entender</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            const style = document.createElement('style');
+            style.innerHTML = `
+                #telesmaInfo {
+                    position: fixed;
+                    top: 16px;
+                    left: 16px;
+                    z-index: 999999;
+                    background: rgba(10, 10, 40, 0.7);
+                    backdrop-filter: blur(12px);
+                    border-radius: 12px;
+                    padding: 8px 14px;
+                    max-width: 220px;
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    font-family: 'SF Mono', 'JetBrains Mono', monospace;
+                    transition: all 0.3s ease;
+                    cursor: pointer;
+                }
+                #telesmaInfo:hover {
+                    background: rgba(10, 10, 40, 0.9);
+                    border-color: rgba(255, 255, 255, 0.3);
+                }
+                #telesmaInfo .telesma-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    margin-bottom: 2px;
+                }
+                #telesmaInfo .telesma-symbol {
+                    font-size: 9px;
+                    color: rgba(255, 255, 255, 0.9);
+                }
+                #telesmaInfo .telesma-title {
+                    font-size: 9px;
+                    letter-spacing: 1.5px;
+                    color: rgba(255, 255, 255, 0.9);
+                    text-transform: uppercase;
+                    font-weight: 500;
+                }
+                #telesmaInfo .telesma-body p {
+                    font-size: 8.5px;
+                    line-height: 1.3;
+                    color: rgba(255, 255, 255, 0.7);
+                    margin-bottom: 2px;
+                }
+                #telesmaInfo .telesma-author {
+                    font-size: 7.5px;
+                    color: rgba(255, 255, 255, 0.4);
+                    margin-top: 2px;
+                    padding-top: 2px;
+                    border-top: 1px solid rgba(255, 255, 255, 0.06);
+                }
+                #telesmaInfo .telesma-close {
+                    position: absolute;
+                    top: 4px;
+                    right: 8px;
+                    color: rgba(255, 255, 255, 0.25);
+                    font-size: 10px;
+                    cursor: pointer;
+                    transition: color 0.2s;
+                }
+                #telesmaInfo .telesma-close:hover {
+                    color: rgba(255, 255, 255, 0.7);
+                }
+
+                #binauralBtn {
+                    position: fixed;
+                    top: 16px;
+                    right: 16px;
+                    z-index: 999999;
+                    width: 36px;
+                    height: 36px;
+                    border: none;
+                    border-radius: 50%;
+                    background: rgba(10, 10, 40, 0.8);
+                    backdrop-filter: blur(8px);
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 16px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                }
+                #binauralBtn:hover {
+                    background: rgba(10, 10, 40, 0.95);
+                    border-color: rgba(255, 255, 255, 0.25);
+                    transform: scale(1.05);
+                }
+
+                #audioUI {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 999998;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: rgba(10, 10, 40, 0.5);
+                    backdrop-filter: blur(4px);
+                    padding: 8px 10px;
+                    border-radius: 20px;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                }
+                #masterSlider {
+                    width: 120px;
+                    height: 2px;
+                    appearance: none;
+                    background: rgba(255, 255, 255, 0.3);
+                    outline: none;
+                }
+                #masterSlider::-webkit-slider-thumb {
+                    appearance: none;
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 50%;
+                    background: white;
+                    cursor: pointer;
+                }
+                #muteBtn {
+                    width: 22px;
+                    height: 22px;
+                    border: none;
+                    border-radius: 50%;
+                    background: rgba(10, 10, 40, 0.8);
+                    color: rgba(255, 255, 255, 0.8);
+                    font-size: 10px;
+                    cursor: pointer;
+                }
+
+                #binauralOverlay {
+                    position: fixed;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background: rgba(0, 0, 20, 0.8);
+                    backdrop-filter: blur(8px);
+                    z-index: 1000000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.5s ease;
+                }
+                #binauralOverlay.active {
+                    opacity: 1;
+                    pointer-events: all;
+                }
+                #binauralOverlay .binaural-modal {
+                    background: rgba(10, 10, 40, 0.95);
+                    backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 40px 50px;
+                    max-width: 480px;
+                    width: 90%;
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8);
+                    font-family: 'SF Mono', 'JetBrains Mono', monospace;
+                    text-align: center;
+                    transform: scale(0.95);
+                    transition: transform 0.4s ease;
+                    color: white;
+                }
+                #binauralOverlay.active .binaural-modal {
+                    transform: scale(1);
+                }
+                #binauralOverlay .binaural-modal .icon {
+                    font-size: 48px;
+                    margin-bottom: 12px;
+                }
+                #binauralOverlay .binaural-modal h2 {
+                    font-size: 18px;
+                    letter-spacing: 2px;
+                    color: rgba(255, 255, 255, 0.9);
+                    text-transform: uppercase;
+                    margin-bottom: 12px;
+                    font-weight: 400;
+                }
+                #binauralOverlay .binaural-modal p {
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: rgba(255, 255, 255, 0.7);
+                    margin-bottom: 4px;
+                }
+                #binauralOverlay .binaural-modal .features {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 8px;
+                    margin: 16px 0 20px;
+                }
+                #binauralOverlay .binaural-modal .features span {
+                    background: rgba(255, 255, 255, 0.06);
+                    padding: 4px 14px;
+                    border-radius: 20px;
+                    font-size: 10px;
+                    color: rgba(255, 255, 255, 0.6);
+                    letter-spacing: 1px;
+                    border: 1px solid rgba(255, 255, 255, 0.05);
+                }
+                #binauralOverlay .binaural-modal .close-btn {
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.15);
+                    color: rgba(255, 255, 255, 0.8);
+                    padding: 10px 30px;
+                    border-radius: 30px;
+                    cursor: pointer;
+                    font-family: inherit;
+                    font-size: 11px;
+                    letter-spacing: 1.5px;
+                    transition: all 0.3s ease;
+                    margin-top: 8px;
+                }
+                #binauralOverlay .binaural-modal .close-btn:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    border-color: rgba(255, 255, 255, 0.3);
+                }
+
+                @media (max-width: 768px) {
+                    #telesmaInfo {
+                        top: 10px;
+                        left: 10px;
+                        padding: 6px 10px;
+                        max-width: 160px;
+                    }
+                    #telesmaInfo .telesma-title { font-size: 8px; }
+                    #telesmaInfo .telesma-body p { font-size: 7px; }
+                    #telesmaInfo .telesma-author { font-size: 6.5px; }
+                    #binauralBtn {
+                        top: 10px;
+                        right: 10px;
+                        width: 30px;
+                        height: 30px;
+                        font-size: 13px;
+                    }
+                    #audioUI { bottom: 15px; right: 15px; padding: 6px 8px; }
+                    #masterSlider { width: 80px; }
+                    #binauralOverlay .binaural-modal { padding: 30px 24px; }
+                    #binauralOverlay .binaural-modal h2 { font-size: 15px; }
+                    #binauralOverlay .binaural-modal p { font-size: 12px; }
+                }
+            `;
+            document.head.appendChild(style);
+
+            const slider = document.getElementById('masterSlider');
+            const muteBtn = document.getElementById('muteBtn');
+            const binauralBtnEl = document.getElementById('binauralBtn');
+            const closeTelesma = document.getElementById('closeTelesma');
+            const telesmaDivEl = document.getElementById('telesmaInfo');
+
+            slider.addEventListener('input', e => {
+                masterVolume = parseFloat(e.target.value);
+                if (masterGainNode) {
+                    masterGainNode.gain.value = masterVolume * 0.8;
+                }
+            });
+
+            muteBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                if (isMuted) {
+                    muteBtn.innerHTML = 'X';
+                    if (masterGainNode) masterGainNode.gain.value = 0;
+                    for (let p of particles) {
+                        p.oscillator.amp(0, 0.05);
+                    }
+                } else {
+                    muteBtn.innerHTML = 'M';
+                    if (masterGainNode) masterGainNode.gain.value = masterVolume * 0.8;
+                }
+            });
+
+            binauralBtnEl.addEventListener('click', () => {
+                overlay.classList.add('active');
+            });
+
+            closeTelesma.addEventListener('click', (e) => {
+                e.stopPropagation();
+                telesmaDivEl.style.opacity = '0';
+                telesmaDivEl.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    telesmaDivEl.style.display = 'none';
+                }, 300);
+            });
+
+            document.getElementById('closeBinaural').addEventListener('click', () => {
+                overlay.classList.remove('active');
+            });
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
+            });
         }
     </script>
 </body>
