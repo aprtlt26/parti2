@@ -17,7 +17,7 @@
     </style>
 </head>
 <body>
-    <!-- Cargar p5.js y p5.sound.js -->
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
     <script>
@@ -27,14 +27,14 @@
         let zoff = 0;
         let particles = [];
         let flowfield;
-        let maxSpeed = 2;  // Incrementar la velocidad máxima para mayor efecto al ser golpeadas
+        let maxSpeed = 2;  
         let audioStarted = false;
         let globalReverb;
         let combFilter;
-        let cursorRadius = 30; // Radio de la bola negra que será el cursor
+        let cursorRadius = 30; 
         let lastFrequencyReset = 0;
-        let frequencyResetInterval = 30000; // 30 segundos
-        let frequencyTransitionDuration = 10000; // 10 segundos para la transición
+        let frequencyResetInterval = 30000; 
+        let frequencyTransitionDuration = 10000; 
         let frequencyTransitionStart = 0;
         let transitioningFrequencies = false;
 
@@ -50,28 +50,26 @@
 
             // Reverberación global
             globalReverb = new p5.Reverb();
-            globalReverb.set(1, 6);  // Reverberación suave y larga
+            globalReverb.set(1, 6); 
 
-            // Filtro delay ajustado para un efecto más ambiental
             combFilter = new p5.Delay();
-            combFilter.setType('delay');  // Usar delay normal para efecto más suave
+            combFilter.setType('delay');  
             combFilter.delayTime(0.12);
             combFilter.feedback(0.15);
             combFilter.amp(0.1);
 
-            // Crear las partículas
             for (let i = 0; i < 350; i++) {
                 particles[i] = new Particle();
             }
 
-            background(0);  // Fondo completamente negro
-            noLoop();  // Pausar hasta que se inicie el audio
+            background(0);  
+            noLoop();  
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 10);  // Fondo con transparencia para efecto de estela
+            background(0, 10); 
 
             let yoff = 0;
             for (let y = 0; y < rows; y++) {
@@ -89,7 +87,7 @@
 
             for (let i = 0; i < particles.length; i++) {
                 particles[i].follow(flowfield);
-                particles[i].interactWithCursor(mouseX, mouseY);  // Interacción con el cursor
+                particles[i].interactWithCursor(mouseX, mouseY);  
                 particles[i].update();
                 particles[i].edges();
                 particles[i].show();
