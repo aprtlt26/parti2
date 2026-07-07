@@ -192,7 +192,6 @@
 
             updateListenerOrientation(mouseX, mouseY);
 
-            // Fondo azul hyperlink
             background(12, 60, 252);
 
             let yoff = 0;
@@ -219,7 +218,6 @@
 
             zoff += 0.001;
 
-            // Cursor
             fill(255, 255, 255, 30);
             noStroke();
             ellipse(mouseX, mouseY, cursorRadius * 2, cursorRadius * 2);
@@ -236,9 +234,7 @@
             }
         }
 
-        // ============================================================
-        // EVENTOS
-        // ============================================================
+
         function touchStarted() {
             if (!audioStarted) {
                 startAudio();
@@ -270,9 +266,7 @@
             }
         }
 
-        // ============================================================
-        // TRANSICIONES DE FRECUENCIA
-        // ============================================================
+
         function initiateFrequencyTransition() {
             let newFrequencies = generateHarmoniousFrequencies();
             for (let i = 0; i < particles.length; i++) {
@@ -304,9 +298,7 @@
             return frequencies;
         }
 
-        // ============================================================
-        // PARTICLE - Partículas blancas que salen de la pantalla en 3D
-        // ============================================================
+    
         class Particle {
             constructor(id) {
                 this.id = id;
@@ -316,7 +308,6 @@
                 this.maxSpeed = maxSpeed;
                 this.prevPos = this.pos.copy();
 
-                // Profundidad 3D (eje Z) - salen de la pantalla
                 this.depthZ = random(2, 18);
                 this.targetDepthZ = this.depthZ;
 
@@ -372,11 +363,9 @@
                 this.pos.add(this.vel);
                 this.acc.mult(0);
 
-                // Posición 3D: las partículas salen de la pantalla (Z positivo)
                 this.targetX3d = map(this.pos.x, 0, width, -8, 8);
                 this.targetY3d = map(this.pos.y, 0, height, 6, -6);
                 
-                // Z: más abajo en pantalla = más cerca (sale de la pantalla)
                 let zWave = sin(this.pos.y * 0.015 + this.id * 0.1) * 3;
                 this.targetZ3d = map(this.pos.y, 0, height, 16, 3) + zWave;
                 this.depthZ = this.targetZ3d;
@@ -443,7 +432,6 @@
                         this.oscillator.amp(0.12 * masterVolume, 0.05);
                     }
 
-                    // Efecto 3D: la partícula sale más de la pantalla al interactuar
                     let distFactor = 1 - (distanceToMouse / cursorRadius);
                     let pushZ = distFactor * 8;
                     if (this.panner) {
@@ -475,7 +463,6 @@
             }
 
             show() {
-                // Partículas blancas con brillo según profundidad
                 let brightness = map(this.z3d, 2, 20, 150, 255);
                 let alpha = map(this.z3d, 2, 20, 100, 220);
                 
@@ -484,13 +471,11 @@
                 line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
                 this.prevPos = this.pos.copy();
 
-                // Tamaño según profundidad: más cerca = más grande
                 let size = map(this.z3d, 2, 20, 1.5, 5);
                 noStroke();
                 fill(255, 255, 255, alpha);
                 ellipse(this.pos.x, this.pos.y, size, size);
                 
-                // Brillo adicional en el centro
                 fill(255, 255, 255, alpha * 0.3);
                 ellipse(this.pos.x, this.pos.y, size * 2.5, size * 2.5);
             }
@@ -523,9 +508,6 @@
             flowfield = new Array(cols * rows);
         }
 
-        // ============================================================
-        // UI - INTERFAZ COMPLETA
-        // ============================================================
         function initUI() {
             
             const telesmaDiv = document.createElement('div');
