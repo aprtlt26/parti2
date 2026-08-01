@@ -3,17 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Telesma | Organismos Vivos (Base)</title>
+    <title>Telesma | Ecosistema Microscópico</title>
     <style>
         body { margin: 0; overflow: hidden; background: #bbff80; cursor: default; }
         canvas { display: block; width: 100%; height: 100%; }
-        #info {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            color: rgba(223, 145, 236, 0.3); font-family: monospace; font-size: 12px;
-            background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 20px;
-            pointer-events: none; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.05);
-            z-index: 10;
-        }
         #startHint {
             position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
             color: rgba(26, 219, 219, 0.6); font-family: monospace; font-size: 14px;
@@ -53,10 +46,9 @@
         @media (max-width: 768px) { #telesmaInfo { top: 10px; left: 10px; padding: 6px 10px; max-width: 160px; } #binauralBtn { top: 10px; right: 10px; width: 30px; height: 30px; font-size: 13px; } #audioUI { bottom: 15px; right: 15px; padding: 6px 8px; } #masterSlider { width: 80px; } }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
 </head>
 <body>
-    <div id="startHint">🎧 Toca para activar el sonido 3D</div>
+    <div id="startHint">🔬 Toca para activar el ecosistema microscópico</div>
     
     <div id="telesmaInfo">
         <span class="telesma-close" id="closeTelesma">✕</span>
@@ -65,7 +57,7 @@
             <span class="telesma-title">TELESMA 2</span>
         </div>
         <div class="telesma-body">
-            <p>Crecimiento orgánico.</p>
+            <p>Ecosistema microscópico.</p>
             <p class="telesma-author">a-prtlt</p>
         </div>
     </div>
@@ -84,138 +76,262 @@
 
     <script>
         // ============================================================
-        // PARTE 1: AUDIO 3D HRTF (Sistema completo del Telesma original)
+        // CONFIGURACIÓN
         // ============================================================
         let audioStarted = false;
         let audioCtx = null;
         let masterGainNode = null;
-        let dryGainNode = null;
-        let reverbGainNode = null;
-        let listenerRotX = 0, listenerRotY = 0;
-        let targetRotX = 0, targetRotY = 0;
         let masterVolume = 0.9;
         let isMuted = false;
-        let voicePool = [];
-        let voiceIndex = 0;
-        const VOICES = 24;
+        let breathPhase = 0;
+        const BREATH_SPEED = 0.003;
+        const MAX_VOICES = 15;
+        let activeVoices = [];
 
-        function initSpatialAudio() {
-            try {
-                audioCtx = getAudioContext();
-                if (!audioCtx) return;
-                masterGainNode = audioCtx.createGain();
-                masterGainNode.gain.value = 0.7;
-                masterGainNode.connect(audioCtx.destination);
-                dryGainNode = audioCtx.createGain();
-                dryGainNode.gain.value = 1.0;
-                dryGainNode.connect(masterGainNode);
-                reverbGainNode = audioCtx.createGain();
-                reverbGainNode.gain.value = 0.3;
-                reverbGainNode.connect(masterGainNode);
-                if (audioCtx.listener) {
-                    audioCtx.listener.positionX.value = 0;
-                    audioCtx.listener.positionY.value = 0;
-                    audioCtx.listener.positionZ.value = 0;
-                    audioCtx.listener.forwardX.value = 0;
-                    audioCtx.listener.forwardY.value = 0;
-                    audioCtx.listener.forwardZ.value = -1;
-                    audioCtx.listener.upX.value = 0;
-                    audioCtx.listener.upY.value = 1;
-                    audioCtx.listener.upZ.value = 0;
-                }
-            } catch(e) { console.warn('Error de audio:', e); }
-        }
+        // ============================================================
+        // TIMBRES MICROSCÓPICOS - SIMPLIFICADOS Y ESTABLES
+        // ============================================================
+        const TIMBRES = [
+            // Cristalinos (altas frecuencias)
+            { type: 'sine', baseFreq: 1200, harmonics: [1, 2.1, 3.4, 5.2], gain: 0.02 },
+            { type: 'triangle', baseFreq: 2000, harmonics: [1, 2.5, 4.1, 6.3], gain: 0.015 },
+            { type: 'sine', baseFreq: 800, harmonics: [1, 2.7, 4.5, 6.8, 8.9], gain: 0.018 },
+            { type: 'sawtooth', baseFreq: 2500, harmonics: [1, 2, 3, 4, 5], gain: 0.012 },
+            
+            // Insectos
+            { type: 'sine', baseFreq: 3500, harmonics: [1, 3.1, 5.5, 7.2], gain: 0.015 },
+            { type: 'triangle', baseFreq: 2800, harmonics: [1, 2.8, 4.7, 6.9], gain: 0.018 },
+            { type: 'sawtooth', baseFreq: 4000, harmonics: [1, 2.2, 3.8, 5.1], gain: 0.012 },
+            { type: 'sine', baseFreq: 1800, harmonics: [1, 2.9, 4.8, 7.1], gain: 0.02 },
+            
+            // Bioeléctricos
+            { type: 'sine', baseFreq: 3000, harmonics: [1, 2.5, 4.8, 7.2], gain: 0.02 },
+            { type: 'triangle', baseFreq: 4500, harmonics: [1, 2.1, 3.9, 5.8], gain: 0.015 },
+            { type: 'sawtooth', baseFreq: 2500, harmonics: [1, 2.5, 4.5, 6.5], gain: 0.016 },
+            { type: 'sine', baseFreq: 5500, harmonics: [1, 2.3, 4.1, 6.7], gain: 0.012 },
+            
+            // Acuáticos
+            { type: 'sine', baseFreq: 2400, harmonics: [1, 2.2, 3.9, 5.5], gain: 0.018 },
+            { type: 'triangle', baseFreq: 3500, harmonics: [1, 2.5, 4.2, 6.1], gain: 0.015 },
+            { type: 'sawtooth', baseFreq: 1500, harmonics: [1, 2.8, 4.6, 6.9], gain: 0.016 },
+            { type: 'sine', baseFreq: 7000, harmonics: [1, 2.1, 3.5, 5.8], gain: 0.012 },
+            
+            // Metálicos
+            { type: 'sine', baseFreq: 1600, harmonics: [1, 2.3, 3.6, 5.2, 6.8], gain: 0.02 },
+            { type: 'triangle', baseFreq: 2200, harmonics: [1, 2.4, 4.2, 6.3], gain: 0.016 },
+            { type: 'sawtooth', baseFreq: 1800, harmonics: [1, 2.5, 4.3, 6.1], gain: 0.018 },
+            { type: 'sine', baseFreq: 5000, harmonics: [1, 2.8, 4.5, 6.9], gain: 0.014 },
+            
+            // Extras
+            { type: 'sine', baseFreq: 8000, harmonics: [1, 2.4, 4.1, 6.8], gain: 0.01 },
+            { type: 'triangle', baseFreq: 6000, harmonics: [1, 2.2, 3.8, 5.5], gain: 0.012 },
+            { type: 'sawtooth', baseFreq: 4000, harmonics: [1, 2.7, 4.9, 7.3], gain: 0.014 },
+            { type: 'sine', baseFreq: 9000, harmonics: [1, 2.1, 3.3, 5.1], gain: 0.008 }
+        ];
 
-        function updateListenerOrientation(mx, my) {
-            if (!audioCtx || !audioCtx.listener) return;
-            targetRotY = map(mx, 0, width, -1.2, 1.2);
-            targetRotX = map(my, 0, height, 0.3, -0.3);
-            listenerRotX += (targetRotX - listenerRotX) * 0.05;
-            listenerRotY += (targetRotY - listenerRotY) * 0.05;
-            try {
-                let fwdX = -Math.sin(listenerRotY);
-                let fwdZ = -Math.cos(listenerRotY);
-                let fwdY = Math.sin(listenerRotX) * 0.1;
-                let fwdLen = Math.sqrt(fwdX*fwdX + fwdY*fwdY + fwdZ*fwdZ);
-                if (fwdLen > 0) { fwdX /= fwdLen; fwdY /= fwdLen; fwdZ /= fwdLen; }
-                let upX = Math.sin(listenerRotX) * 0.15;
-                let upY = 0.9;
-                let upZ = 0;
-                audioCtx.listener.forwardX.value = fwdX;
-                audioCtx.listener.forwardY.value = fwdY;
-                audioCtx.listener.forwardZ.value = fwdZ;
-                audioCtx.listener.upX.value = upX;
-                audioCtx.listener.upY.value = upY;
-                audioCtx.listener.upZ.value = upZ;
-            } catch(e) {}
-        }
+        let usedTimbreIndices = [];
 
-        class VoicePanner {
-            constructor() {
-                if (!audioCtx) return;
-                this.pannerNode = audioCtx.createPanner();
-                this.pannerNode.panningModel = 'HRTF';
-                this.pannerNode.distanceModel = 'inverse';
-                this.pannerNode.refDistance = 1.0;
-                this.pannerNode.maxDistance = 100;
-                this.pannerNode.rolloffFactor = 1.0;
-                if (dryGainNode) this.pannerNode.connect(dryGainNode);
-                if (reverbGainNode) this.pannerNode.connect(reverbGainNode);
-                this.posX = 0; this.posY = 0; this.posZ = 0;
+        function getNextTimbre() {
+            if (usedTimbreIndices.length >= TIMBRES.length) {
+                usedTimbreIndices = [];
             }
-            setPosition(x, y, z) {
-                this.posX = x; this.posY = y; this.posZ = z;
-                try {
-                    this.pannerNode.positionX.value = x;
-                    this.pannerNode.positionY.value = y;
-                    this.pannerNode.positionZ.value = z;
-                } catch(e) {}
+            let available = [];
+            for (let i = 0; i < TIMBRES.length; i++) {
+                if (!usedTimbreIndices.includes(i)) available.push(i);
             }
-            connectOscillator(osc) {
-                try {
-                    if (osc._gainNode) {
-                        osc._gainNode.disconnect();
-                        osc._gainNode.connect(this.pannerNode);
-                    } else {
-                        osc.disconnect();
-                        osc.connect(this.pannerNode);
-                    }
-                } catch(e) { try { osc.disconnect(); osc.connect(this.pannerNode); } catch(e2) {} }
-            }
-        }
-
-        function initVoicePool() {
-            for(let i=0; i<VOICES; i++){
-                let osc = new p5.Oscillator('sine');
-                osc.amp(0);
-                let panner = new VoicePanner();
-                panner.connectOscillator(osc);
-                osc.start();
-                voicePool.push({ osc: osc, panner: panner });
-            }
-        }
-
-        function playSoundFromBranch(x, y, depth, freq, amp) {
-            if (isMuted || masterVolume === 0) return;
-            let voice = voicePool[voiceIndex];
-            voiceIndex = (voiceIndex + 1) % VOICES;
-            if (!voice) return;
-
-            let x3d = map(x, 0, width, -10, 10);
-            let y3d = map(y, 0, height, 7, -7);
-            let z3d = depth * 2;
-            voice.panner.setPosition(x3d, y3d, z3d);
-
-            voice.osc.freq(freq);
-            voice.osc.amp(amp * masterVolume, 0.02);
-
-            setTimeout(() => {
-                voice.osc.amp(0, 0.08);
-            }, random(80, 250));
+            const idx = random(available);
+            usedTimbreIndices.push(idx);
+            return { ...TIMBRES[idx], idx };
         }
 
         // ============================================================
-        // PARTE 2: CRECIMIENTO ORGÁNICO (FORMA AMEBOIDE)
+        // VOZ MICROSCÓPICA - SIMPLIFICADA Y ESTABLE
+        // ============================================================
+        class MicroscopicVoice {
+            constructor(branch) {
+                this.branch = branch;
+                this.alive = true;
+                this.age = 0;
+                this.cleaned = false;
+                this.releaseTimer = null;
+                
+                // Seleccionar timbre
+                this.timbre = getNextTimbre();
+                
+                // Frecuencia base en rango alto
+                const depth = branch.depth || 0;
+                const thickness = branch.thickness || 10;
+                const offset = map(thickness, 3, 20, -400, 400);
+                this.baseFreq = this.timbre.baseFreq + offset + random(-100, 100);
+                this.baseFreq = constrain(this.baseFreq, 600, 16000);
+                
+                // Crear nodos de audio - UN SOLO OSCILADOR + FILTRO
+                this.createNodes();
+                this.connectNodes();
+                this.startNodes();
+                
+                // LFO simple para modulación
+                this.createLFO();
+            }
+            
+            createNodes() {
+                const ctx = audioCtx;
+                
+                // Un solo oscilador para estabilidad
+                this.osc = ctx.createOscillator();
+                this.osc.type = this.timbre.type || 'sine';
+                this.osc.frequency.value = this.baseFreq;
+                
+                // Ganancia
+                this.gain = ctx.createGain();
+                this.gain.gain.value = this.timbre.gain || 0.015;
+                
+                // Filtro resonante para dar carácter
+                this.filter = ctx.createBiquadFilter();
+                this.filter.type = 'bandpass';
+                this.filter.frequency.value = this.baseFreq * 1.2;
+                this.filter.Q.value = random(2, 10);
+                
+                // Highpass para eliminar graves
+                this.highPass = ctx.createBiquadFilter();
+                this.highPass.type = 'highpass';
+                this.highPass.frequency.value = 400;
+                
+                // Panner estéreo
+                this.panner = ctx.createStereoPanner();
+                this.panner.pan.value = random(-0.7, 0.7);
+            }
+            
+            connectNodes() {
+                // Conexión simple y directa
+                this.osc.connect(this.gain);
+                this.gain.connect(this.filter);
+                this.filter.connect(this.highPass);
+                this.highPass.connect(this.panner);
+                this.panner.connect(masterGainNode);
+            }
+            
+            startNodes() {
+                try {
+                    this.osc.start();
+                } catch(e) {}
+            }
+            
+            createLFO() {
+                const ctx = audioCtx;
+                
+                // LFO para vibración de frecuencia
+                this.lfo = ctx.createOscillator();
+                this.lfo.frequency.value = random(0.1, 2);
+                this.lfoGain = ctx.createGain();
+                this.lfoGain.gain.value = random(5, 25);
+                this.lfo.connect(this.lfoGain);
+                this.lfoGain.connect(this.osc.frequency);
+                
+                // LFO para filtro
+                this.lfoFilter = ctx.createOscillator();
+                this.lfoFilter.frequency.value = random(0.05, 1);
+                this.lfoFilterGain = ctx.createGain();
+                this.lfoFilterGain.gain.value = random(100, 400);
+                this.lfoFilter.connect(this.lfoFilterGain);
+                this.lfoFilterGain.connect(this.filter.frequency);
+                
+                // LFO para pan
+                this.lfoPan = ctx.createOscillator();
+                this.lfoPan.frequency.value = random(0.02, 0.5);
+                this.lfoPanGain = ctx.createGain();
+                this.lfoPanGain.gain.value = random(0.3, 0.7);
+                this.lfoPan.connect(this.lfoPanGain);
+                this.lfoPanGain.connect(this.panner.pan);
+                
+                // Iniciar LFOs
+                try {
+                    this.lfo.start();
+                    this.lfoFilter.start();
+                    this.lfoPan.start();
+                } catch(e) {}
+            }
+            
+            update() {
+                if (!this.alive || this.cleaned) return;
+                
+                this.age += 0.016;
+                const branch = this.branch;
+                
+                // Crecimiento modifica el sonido
+                if (branch.length < branch.maxLength) {
+                    const growth = branch.length / branch.maxLength;
+                    
+                    // Frecuencia aumenta con el crecimiento
+                    const freqMod = 1 + growth * 0.15;
+                    this.osc.frequency.value = this.baseFreq * freqMod;
+                    
+                    // Filtro se abre
+                    this.filter.frequency.value = this.baseFreq * (0.8 + growth * 0.6);
+                    this.filter.Q.value = 2 + growth * 8;
+                    
+                    // Ganancia aumenta
+                    const baseGain = this.timbre.gain || 0.015;
+                    this.gain.gain.value = baseGain * (0.5 + growth * 0.5);
+                }
+                
+                // Respiración global
+                const breath = 0.7 + 0.3 * Math.sin(breathPhase + (this.age * 0.01));
+                this.gain.gain.value *= breath;
+            }
+            
+            die() {
+                if (!this.alive || this.cleaned) return;
+                this.alive = false;
+                
+                let steps = 0;
+                this.releaseTimer = setInterval(() => {
+                    steps++;
+                    this.gain.gain.value *= 0.95;
+                    if (steps > 30 || this.gain.gain.value < 0.0001) {
+                        clearInterval(this.releaseTimer);
+                        this.releaseTimer = null;
+                        this.cleanup();
+                    }
+                }, 50);
+            }
+            
+            cleanup() {
+                if (this.cleaned) return;
+                this.cleaned = true;
+                
+                if (this.releaseTimer) {
+                    clearInterval(this.releaseTimer);
+                    this.releaseTimer = null;
+                }
+                
+                try {
+                    if (this.osc) {
+                        this.osc.stop();
+                        this.osc.disconnect();
+                    }
+                    if (this.lfo) {
+                        this.lfo.stop();
+                        this.lfo.disconnect();
+                    }
+                    if (this.lfoFilter) {
+                        this.lfoFilter.stop();
+                        this.lfoFilter.disconnect();
+                    }
+                    if (this.lfoPan) {
+                        this.lfoPan.stop();
+                        this.lfoPan.disconnect();
+                    }
+                    if (this.gain) this.gain.disconnect();
+                    if (this.filter) this.filter.disconnect();
+                    if (this.highPass) this.highPass.disconnect();
+                    if (this.panner) this.panner.disconnect();
+                } catch(e) {}
+            }
+        }
+
+        // ============================================================
+        // CRECIMIENTO ORGÁNICO (SIN MODIFICAR)
         // ============================================================
         class Branch {
             constructor(x, y, angle, parent = null) {
@@ -233,7 +349,12 @@
                 this.alive = true;
                 this.phase = random(TWO_PI);
                 
-                this.depth = random(-3, 3);
+                this.depth = parent ? parent.depth + random(0.5, 1.5) : random(-3, 3);
+                this.depth = constrain(this.depth, -3, 6);
+                
+                this.hasSplit = false;
+                this.voice = null;
+                this.voiceCreated = false;
             }
 
             getTip() {
@@ -243,71 +364,107 @@
             grow() {
                 if(!this.alive || this.length >= this.maxLength) return;
                 
-                let vib = sin(frameCount * 0.03 + this.phase) * 0.04;
+                const vib = sin(frameCount * 0.03 + this.phase) * 0.04;
                 this.angle += vib;
-
                 this.length += this.speed;
+                
+                if(!this.voiceCreated && audioStarted && audioCtx && activeVoices.length < MAX_VOICES) {
+                    this.voiceCreated = true;
+                    this.voice = new MicroscopicVoice(this);
+                    activeVoices.push(this.voice);
+                }
+                
+                if(this.voice) this.voice.update();
 
-                if(this.length > this.maxLength * 0.6 && this.children.length === 0) {
-                    if(random() < 0.2 && this.thickness > 4) {
-                        let tip = this.getTip();
-                        let newAngle1 = this.angle + random(0.6, 1.2);
-                        let newAngle2 = this.angle - random(0.8, 1.0);
+                if(this.length > this.maxLength * 0.6 && this.children.length === 0 && !this.hasSplit) {
+                    if(random() < 0.15 && this.thickness > 4) {
+                        const tip = this.getTip();
+                        const newAngle1 = this.angle + random(0.6, 1.2);
+                        const newAngle2 = this.angle - random(0.8, 1.0);
+                        
+                        if(audioStarted && audioCtx) {
+                            this.createSpectralBurst();
+                        }
+                        
                         this.children.push(new Branch(tip.x, tip.y, newAngle1, this));
                         this.children.push(new Branch(tip.x, tip.y, newAngle2, this));
+                        this.hasSplit = true;
                         this.alive = false;
+                        
+                        if(this.voice) {
+                            setTimeout(() => {
+                                if(this.voice && this.voice.alive) {
+                                    this.voice.die();
+                                }
+                            }, 400);
+                        }
                     }
                 }
             }
             
-            // ============================================================
-            // RENDERIZADO AMEBOIDE (Sin círculos perfectos)
-            // ============================================================
+            createSpectralBurst() {
+                const baseFreq = this.voice ? this.voice.baseFreq : 2000;
+                const numNotes = floor(random(3, 6));
+                
+                for (let i = 0; i < numNotes; i++) {
+                    try {
+                        const gain = audioCtx.createGain();
+                        const freq = baseFreq * (1 + random(-0.2, 0.2)) * (1 + i * random(0.05, 0.1));
+                        gain.gain.setValueAtTime(0.008 + random(0, 0.008), audioCtx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + random(0.1, 0.3));
+                        
+                        const osc = audioCtx.createOscillator();
+                        osc.type = random(['sine', 'triangle']);
+                        osc.frequency.value = constrain(freq, 600, 16000);
+                        osc.connect(gain);
+                        gain.connect(masterGainNode);
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + random(0.1, 0.3));
+                    } catch(e) {}
+                }
+            }
+
             renderHeightMap(buffer) {
-                let tip = this.getTip();
+                const tip = this.getTip();
                 buffer.noStroke();
                 buffer.fill(255, 150);
                 
-                // Dibujamos la punta actual como una mancha irregular
-                // En lugar de ellipse, usamos un polígono curvo con 5-8 puntos
-                let numPoints = floor(random(5, 9));
-                let rad = this.thickness + random(-2, 2);
+                const numPoints = floor(random(5, 9));
+                const rad = this.thickness + random(-2, 2);
                 
                 buffer.beginShape();
                 for(let i=0; i<numPoints; i++) {
-                    let angleOffset = (TWO_PI / numPoints) * i + random(-0.2, 0.2);
-                    let radOffset = rad * random(0.6, 1.4);
-                    let x = tip.x + cos(angleOffset) * radOffset;
-                    let y = tip.y + sin(angleOffset) * radOffset;
+                    const angleOffset = (TWO_PI / numPoints) * i + random(-0.2, 0.2);
+                    const radOffset = rad * random(0.6, 1.4);
+                    const x = tip.x + cos(angleOffset) * radOffset;
+                    const y = tip.y + sin(angleOffset) * radOffset;
                     buffer.curveVertex(x, y);
                 }
                 buffer.endShape(CLOSE);
 
                 if(this.parent) {
-                    let pTip = this.parent.getTip();
-                    let steps = int(dist(pTip.x, pTip.y, tip.x, tip.y) / 4);
+                    const pTip = this.parent.getTip();
+                    const steps = int(dist(pTip.x, pTip.y, tip.x, tip.y) / 4);
                     for(let i=0; i<steps; i++) {
-                        let t = i / steps;
-                        let x = lerp(pTip.x, tip.x, t);
-                        let y = lerp(pTip.y, tip.y, t);
+                        const t = i / steps;
+                        const x = lerp(pTip.x, tip.x, t);
+                        const y = lerp(pTip.y, tip.y, t);
                         
-                        // El camino se construye con manchas estiradas y rotadas
-                        let cellSize = this.thickness * (1 - t * 0.5) + random(-0.3, 0.3);
-                        let stretchX = cellSize * random(1.0, 2.0);
-                        let stretchY = cellSize * random(0.5, 1.0);
+                        const cellSize = this.thickness * (1 - t * 0.5) + random(-0.3, 0.3);
+                        const stretchX = cellSize * random(1.0, 2.0);
+                        const stretchY = cellSize * random(0.5, 1.0);
                         
-                        let angleOffset = this.angle + random(-0.2, 0.2);
+                        const angleOffset = this.angle + random(-0.2, 0.2);
                         buffer.push();
                         buffer.translate(x, y);
                         buffer.rotate(angleOffset);
                         
-                        // Mancha con bordes curvos
                         buffer.beginShape();
-                        let nP = floor(random(4, 7));
+                        const nP = floor(random(4, 7));
                         for(let j=0; j<nP; j++) {
-                            let aOff = (TWO_PI / nP) * j + random(-0.1, 0.1);
-                            let rX = stretchX * random(0.7, 1.3);
-                            let rY = stretchY * random(0.7, 1.3);
+                            const aOff = (TWO_PI / nP) * j + random(-0.1, 0.1);
+                            const rX = stretchX * random(0.7, 1.3);
+                            const rY = stretchY * random(0.7, 1.3);
                             buffer.curveVertex(cos(aOff) * rX, sin(aOff) * rY);
                         }
                         buffer.endShape(CLOSE);
@@ -315,29 +472,28 @@
                     }
                 }
 
-                // Bulbos finales (Ameboides y deformes)
                 if(this.children.length > 0 && !this.alive) {
                     buffer.fill(255, 180);
-                    let numLumps = floor(random(4, 8));
+                    const numLumps = floor(random(4, 8));
                     for(let i=0; i<numLumps; i++) {
-                        let offsetX = random(-this.thickness, this.thickness);
-                        let offsetY = random(-this.thickness, this.thickness);
-                        let radX = this.thickness * random(0.8, 1.8) + random(0, 3);
-                        let radY = this.thickness * random(0.8, 1.8) + random(0, 3);
+                        const offsetX = random(-this.thickness, this.thickness);
+                        const offsetY = random(-this.thickness, this.thickness);
+                        const radX = this.thickness * random(0.8, 1.8) + random(0, 3);
+                        const radY = this.thickness * random(0.8, 1.8) + random(0, 3);
                         
                         buffer.beginShape();
-                        let nP = floor(random(5, 8));
+                        const nP = floor(random(5, 8));
                         for(let j=0; j<nP; j++) {
-                            let aOff = (TWO_PI / nP) * j + random(-0.1, 0.1);
-                            let rX = radX * random(0.8, 1.2);
-                            let rY = radY * random(0.8, 1.2);
+                            const aOff = (TWO_PI / nP) * j + random(-0.1, 0.1);
+                            const rX = radX * random(0.8, 1.2);
+                            const rY = radY * random(0.8, 1.2);
                             buffer.curveVertex(tip.x + offsetX + cos(aOff) * rX, tip.y + offsetY + sin(aOff) * rY);
                         }
                         buffer.endShape(CLOSE);
                     }
                 }
 
-                for(let child of this.children) {
+                for(const child of this.children) {
                     child.renderHeightMap(buffer);
                 }
             }
@@ -348,8 +504,8 @@
                 this.rootX = x; this.rootY = y;
                 this.allBranches = [];
                 for(let i=0; i<5; i++) {
-                    let angle = (TWO_PI / 5) * i + random(-0.3, 0.3);
-                    let b = new Branch(x, y, angle);
+                    const angle = (TWO_PI / 5) * i + random(-0.3, 0.3);
+                    const b = new Branch(x, y, angle);
                     b.thickness = random(15, 25);
                     this.allBranches.push(b);
                 }
@@ -359,17 +515,17 @@
                 for(let b of this.allBranches) {
                     b.grow();
                     for(let child of b.children) {
-                        if(!this.allBranches.includes(child)) this.allBranches.push(child);
+                        if(!this.allBranches.includes(child)) {
+                            this.allBranches.push(child);
+                        }
                     }
                 }
                 
-                if(audioStarted && frameCount % 3 === 0) {
-                    let b = random(this.allBranches);
-                    if(b) {
-                        let tip = b.getTip();
-                        let freq = map(b.length, 0, b.maxLength, 200, 4000);
-                        let amp = map(b.thickness, 3, 20, 0.01, 0.1);
-                        playSoundFromBranch(tip.x, tip.y, b.depth, freq, amp);
+                activeVoices = activeVoices.filter(v => v.alive || !v.cleaned);
+                if(activeVoices.length > MAX_VOICES) {
+                    const toRemove = activeVoices.splice(MAX_VOICES);
+                    for(const v of toRemove) {
+                        if(v.alive) v.die();
                     }
                 }
             }
@@ -380,7 +536,7 @@
         }
 
         // ============================================================
-        // PARTE 3: PIPELINE DE RELIEVE (Emboss + Textura)
+        // PIPELINE DE RELIEVE (SIN MODIFICAR)
         // ============================================================
         let network;
         let heightBuffer;
@@ -389,18 +545,38 @@
         function setup() {
             createCanvas(windowWidth, windowHeight);
             pixelDensity(1);
-            initSpatialAudio();
-            initVoicePool();
             
             heightBuffer = createGraphics(width, height);
             finalBuffer = createGraphics(width, height);
+            
+            setupUI();
+            
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                masterGainNode = audioCtx.createGain();
+                masterGainNode.gain.value = 0.25;
+                masterGainNode.connect(audioCtx.destination);
+                
+                if(audioCtx.listener) {
+                    audioCtx.listener.positionX.value = 0;
+                    audioCtx.listener.positionY.value = 0;
+                    audioCtx.listener.positionZ.value = 0;
+                    audioCtx.listener.forwardX.value = 0;
+                    audioCtx.listener.forwardY.value = 0;
+                    audioCtx.listener.forwardZ.value = -1;
+                    audioCtx.listener.upX.value = 0;
+                    audioCtx.listener.upY.value = 1;
+                    audioCtx.listener.upZ.value = 0;
+                }
+            } catch(e) {
+                console.warn('Error de audio:', e);
+            }
+            
             network = new MyceliumNetwork(width/2, height/2);
 
             setTimeout(() => {
                 document.getElementById('startHint').style.opacity = '0';
             }, 5000);
-            
-            setupUI();
         }
 
         function draw() {
@@ -408,51 +584,50 @@
                 background(80);
                 push();
                 translate(width/2,height/2);
-                let pulse=sin(frameCount*0.04)*8;
+                const pulse=sin(frameCount*0.04)*8;
                 noStroke();
                 fill(255,180);
                 textAlign(CENTER,CENTER);
                 textSize(14);
-                text("click to activate sound",0,40+pulse);
+                text("🔬 toca para activar",0,40+pulse);
                 pop();
                 frameCount++;
                 return;
             }
 
+            breathPhase += BREATH_SPEED;
             updateListenerOrientation(mouseX, mouseY);
             
-            // 1. CRECIMIENTO
             network.update();
 
-            // 2. MAPA DE ALTURA
             heightBuffer.background(0);
             heightBuffer.blendMode(ADD);
             network.render(heightBuffer);
             heightBuffer.blendMode(BLEND);
 
-            // 3. RELIEVE Y COLOR
             finalBuffer.copy(heightBuffer, 0, 0, width, height, 0, 0, width, height);
             finalBuffer.loadPixels();
             heightBuffer.loadPixels();
 
             for (let x = 1; x < width - 1; x += 1) {
                 for (let y = 1; y < height - 1; y += 1) {
-                    let index = (x + y * width) * 4;
+                    const index = (x + y * width) * 4;
                     
-                    let center = heightBuffer.pixels[index];
-                    let right  = heightBuffer.pixels[index + 4];
-                    let down   = heightBuffer.pixels[index + width * 4];
+                    const center = heightBuffer.pixels[index];
+                    const right  = heightBuffer.pixels[index + 4];
+                    const down   = heightBuffer.pixels[index + width * 4];
                     
                     let diffX = (center - right) * 1.2;
                     let diffY = (center - down) * 1.2;
                     let shadow = (diffX + diffY) * 0.8;
                     shadow = constrain(shadow, -80, 80);
 
-let baseR = 187 + shadow;
-let baseG = 205 + shadow;
-let baseB = 128 + shadow;
+                    const baseR = 187 + shadow;
+                    const baseG = 205 + shadow;
+                    const baseB = 128 + shadow;
 
-let grain = random(-30,30);                    finalBuffer.pixels[index]     = constrain(baseR + grain, 0, 255);
+                    const grain = random(-30,30);
+                    finalBuffer.pixels[index]     = constrain(baseR + grain, 0, 255);
                     finalBuffer.pixels[index + 1] = constrain(baseG + grain, 0, 255);
                     finalBuffer.pixels[index + 2] = constrain(baseB + grain, 0, 255);
                     finalBuffer.pixels[index + 3] = 255;
@@ -462,16 +637,39 @@ let grain = random(-30,30);                    finalBuffer.pixels[index]     = c
             image(finalBuffer, 0, 0);
         }
 
-        function mousePressed() {
-            if(!audioStarted){
-                userStartAudio();
+        function startAudio() {
+            if(audioStarted) return;
+            try {
+                if(audioCtx && audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
                 audioStarted = true;
-                if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
                 document.getElementById('startHint').style.display = 'none';
+                network = new MyceliumNetwork(width/2, height/2);
+                heightBuffer.background(0);
+                finalBuffer.background(123, 132, 145);
+            } catch(e) {
+                console.warn('Error al iniciar audio:', e);
             }
-            network = new MyceliumNetwork(mouseX, mouseY);
-            heightBuffer.background(0);
-            finalBuffer.background(123, 132, 145);
+        }
+
+        function mousePressed() {
+            startAudio();
+            if(audioStarted) {
+                network = new MyceliumNetwork(mouseX, mouseY);
+                heightBuffer.background(0);
+                finalBuffer.background(123, 132, 145);
+            }
+        }
+
+        function touchStarted() {
+            startAudio();
+            if(audioStarted && touches && touches.length > 0) {
+                network = new MyceliumNetwork(touches[0].x, touches[0].y);
+                heightBuffer.background(0);
+                finalBuffer.background(123, 132, 145);
+            }
+            return false;
         }
 
         function windowResized() {
@@ -486,12 +684,21 @@ let grain = random(-30,30);                    finalBuffer.pixels[index]     = c
             const closeTelesma = document.getElementById('closeTelesma');
             const telesmaDiv = document.getElementById('telesmaInfo');
 
-            slider.addEventListener('input', e => { masterVolume = parseFloat(e.target.value); });
+            slider.addEventListener('input', e => { 
+                masterVolume = parseFloat(e.target.value);
+                if(masterGainNode) {
+                    masterGainNode.gain.value = masterVolume * 0.25;
+                }
+            });
+            
             muteBtn.addEventListener('click', () => {
                 isMuted = !isMuted;
                 muteBtn.innerHTML = isMuted ? 'X' : 'M';
-                if(isMuted) for(let v of voicePool) v.osc.amp(0, 0.05);
+                if(masterGainNode) {
+                    masterGainNode.gain.value = isMuted ? 0 : masterVolume * 0.25;
+                }
             });
+            
             closeTelesma.addEventListener('click', (e) => {
                 e.stopPropagation();
                 telesmaDiv.style.opacity = '0';
@@ -510,6 +717,28 @@ let grain = random(-30,30);                    finalBuffer.pixels[index]     = c
                     document.getElementById('binauralOverlay').classList.remove('active');
                 }
             });
+        }
+
+        function updateListenerOrientation(mx, my) {
+            if (!audioCtx || !audioCtx.listener) return;
+            const targetRotY = map(mx, 0, width, -1.2, 1.2);
+            const targetRotX = map(my, 0, height, 0.3, -0.3);
+            try {
+                let fwdX = -Math.sin(targetRotY);
+                let fwdZ = -Math.cos(targetRotY);
+                let fwdY = Math.sin(targetRotX) * 0.1;
+                const fwdLen = Math.sqrt(fwdX*fwdX + fwdY*fwdY + fwdZ*fwdZ);
+                if (fwdLen > 0) { fwdX /= fwdLen; fwdY /= fwdLen; fwdZ /= fwdLen; }
+                const upX = Math.sin(targetRotX) * 0.15;
+                const upY = 0.9;
+                const upZ = 0;
+                audioCtx.listener.forwardX.value = fwdX;
+                audioCtx.listener.forwardY.value = fwdY;
+                audioCtx.listener.forwardZ.value = fwdZ;
+                audioCtx.listener.upX.value = upX;
+                audioCtx.listener.upY.value = upY;
+                audioCtx.listener.upZ.value = upZ;
+            } catch(e) {}
         }
     </script>
 </body>
