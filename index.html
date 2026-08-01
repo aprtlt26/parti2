@@ -56,7 +56,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
 </head>
 <body>
-    <div id="info">Crecimiento por Surcos | Audio 3D HRTF</div>
+    <div id="info">Crecimiento por cultivo | Audio 3D HRTF</div>
     <div id="startHint">🎧 Toca para activar el sonido 3D</div>
     
     <div id="telesmaInfo">
@@ -84,9 +84,7 @@
     </div>
 
     <script>
-        // ============================================================
-        // PARTE 1: AUDIO 3D HRTF
-        // ============================================================
+      
         let audioStarted = false;
         let audioCtx = null;
         let masterGainNode = null;
@@ -264,12 +262,9 @@
                 buffer.noStroke();
                 buffer.fill(255, 150);
                 
-                // ============================================================
-                // FORMAS NO CIRCULARES (Manchas elásticas y grumosas)
-                // ============================================================
+            
                 let radX = this.thickness + random(-0.5, 0.5);
                 let radY = this.thickness * random(0.6, 1.4) + random(-0.5, 0.5);
-                // Giro el pincel para que no sea perfectamente recto
                 buffer.ellipse(tip.x, tip.y, radX, radY);
 
                 if(this.parent) {
@@ -279,14 +274,11 @@
                         let t = i / steps;
                         let x = lerp(pTip.x, tip.x, t);
                         let y = lerp(pTip.y, tip.y, t);
-                        
-                        // Aquí deformamos el camino: en lugar de un círculo, dibujamos una mancha alargada
-                        // que cambia de forma en cada paso, como una célula estirándose.
+                
                         let cellSize = this.thickness * (1 - t * 0.5) + random(-0.3, 0.3);
                         let stretchX = cellSize * random(0.5, 1.5);
                         let stretchY = cellSize * random(0.5, 1.5);
                         
-                        // Rotamos la mancha según la dirección de la rama para que fluya
                         let angleOffset = this.angle + random(-0.1, 0.1);
                         buffer.push();
                         buffer.translate(x, y);
@@ -296,19 +288,15 @@
                     }
                 }
 
-                // ============================================================
-                // BULBOS DEFORMES (Grumos irregulares)
-                // ============================================================
+     
                 if(this.children.length > 0 && !this.alive) {
                     buffer.fill(255, 180);
                     
-                    // En lugar de un círculo, dibujamos un "grumo" hecho de 3 o 4 partes superpuestas
                     let numLumps = floor(random(3, 6));
                     for(let i=0; i<numLumps; i++) {
                         let offsetX = random(-this.thickness, this.thickness);
                         let offsetY = random(-this.thickness, this.thickness);
                         
-                        // Cada parte del grumo es una elipse deforme (no un círculo)
                         let lumpRadX = this.thickness * random(0.6, 1.2) + random(0, 3);
                         let lumpRadY = this.thickness * random(0.6, 1.2) + random(0, 3);
                         
@@ -424,15 +412,11 @@
                     let shadow = (diffX + diffY) * 0.8;
                     shadow = constrain(shadow, -80, 80);
 
-                    // ============================================================
-                    // COLORES MORADOS Y BLANCOS (Telesma)
-                    // ============================================================
-                    // Base es un morado suave (como 160, 140, 180) + la sombra del relieve
+           
                     let baseR = 160 + shadow;
                     let baseG = 130 + shadow;
                     let baseB = 180 + shadow;
 
-                    // Cuanto más altura (centro blanco), más tiramos a blanco
                     let whiteness = center / 255.0;
                     baseR = lerp(baseR, 220, whiteness);
                     baseG = lerp(baseG, 220, whiteness);
