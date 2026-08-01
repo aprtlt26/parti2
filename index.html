@@ -89,44 +89,44 @@
         let activeVoices = [];
 
         // ============================================================
-        // TIMBRES MICROSCÓPICOS - SIMPLIFICADOS Y ESTABLES
+        // TIMBRES MICROSCÓPICOS - CON VOLUMEN SUBIDO
         // ============================================================
         const TIMBRES = [
             // Cristalinos (altas frecuencias)
-            { type: 'sine', baseFreq: 1200, harmonics: [1, 2.1, 3.4, 5.2], gain: 0.02 },
-            { type: 'triangle', baseFreq: 2000, harmonics: [1, 2.5, 4.1, 6.3], gain: 0.015 },
-            { type: 'sine', baseFreq: 800, harmonics: [1, 2.7, 4.5, 6.8, 8.9], gain: 0.018 },
-            { type: 'sawtooth', baseFreq: 2500, harmonics: [1, 2, 3, 4, 5], gain: 0.012 },
+            { type: 'sine', baseFreq: 1200, harmonics: [1, 2.1, 3.4, 5.2], gain: 0.08 },
+            { type: 'triangle', baseFreq: 2000, harmonics: [1, 2.5, 4.1, 6.3], gain: 0.06 },
+            { type: 'sine', baseFreq: 800, harmonics: [1, 2.7, 4.5, 6.8, 8.9], gain: 0.07 },
+            { type: 'sawtooth', baseFreq: 2500, harmonics: [1, 2, 3, 4, 5], gain: 0.05 },
             
             // Insectos
-            { type: 'sine', baseFreq: 3500, harmonics: [1, 3.1, 5.5, 7.2], gain: 0.015 },
-            { type: 'triangle', baseFreq: 2800, harmonics: [1, 2.8, 4.7, 6.9], gain: 0.018 },
-            { type: 'sawtooth', baseFreq: 4000, harmonics: [1, 2.2, 3.8, 5.1], gain: 0.012 },
-            { type: 'sine', baseFreq: 1800, harmonics: [1, 2.9, 4.8, 7.1], gain: 0.02 },
+            { type: 'sine', baseFreq: 3500, harmonics: [1, 3.1, 5.5, 7.2], gain: 0.06 },
+            { type: 'triangle', baseFreq: 2800, harmonics: [1, 2.8, 4.7, 6.9], gain: 0.07 },
+            { type: 'sawtooth', baseFreq: 4000, harmonics: [1, 2.2, 3.8, 5.1], gain: 0.05 },
+            { type: 'sine', baseFreq: 1800, harmonics: [1, 2.9, 4.8, 7.1], gain: 0.08 },
             
             // Bioeléctricos
-            { type: 'sine', baseFreq: 3000, harmonics: [1, 2.5, 4.8, 7.2], gain: 0.02 },
-            { type: 'triangle', baseFreq: 4500, harmonics: [1, 2.1, 3.9, 5.8], gain: 0.015 },
-            { type: 'sawtooth', baseFreq: 2500, harmonics: [1, 2.5, 4.5, 6.5], gain: 0.016 },
-            { type: 'sine', baseFreq: 5500, harmonics: [1, 2.3, 4.1, 6.7], gain: 0.012 },
+            { type: 'sine', baseFreq: 3000, harmonics: [1, 2.5, 4.8, 7.2], gain: 0.08 },
+            { type: 'triangle', baseFreq: 4500, harmonics: [1, 2.1, 3.9, 5.8], gain: 0.06 },
+            { type: 'sawtooth', baseFreq: 2500, harmonics: [1, 2.5, 4.5, 6.5], gain: 0.065 },
+            { type: 'sine', baseFreq: 5500, harmonics: [1, 2.3, 4.1, 6.7], gain: 0.05 },
             
             // Acuáticos
-            { type: 'sine', baseFreq: 2400, harmonics: [1, 2.2, 3.9, 5.5], gain: 0.018 },
-            { type: 'triangle', baseFreq: 3500, harmonics: [1, 2.5, 4.2, 6.1], gain: 0.015 },
-            { type: 'sawtooth', baseFreq: 1500, harmonics: [1, 2.8, 4.6, 6.9], gain: 0.016 },
-            { type: 'sine', baseFreq: 7000, harmonics: [1, 2.1, 3.5, 5.8], gain: 0.012 },
+            { type: 'sine', baseFreq: 2400, harmonics: [1, 2.2, 3.9, 5.5], gain: 0.07 },
+            { type: 'triangle', baseFreq: 3500, harmonics: [1, 2.5, 4.2, 6.1], gain: 0.06 },
+            { type: 'sawtooth', baseFreq: 1500, harmonics: [1, 2.8, 4.6, 6.9], gain: 0.065 },
+            { type: 'sine', baseFreq: 7000, harmonics: [1, 2.1, 3.5, 5.8], gain: 0.05 },
             
             // Metálicos
-            { type: 'sine', baseFreq: 1600, harmonics: [1, 2.3, 3.6, 5.2, 6.8], gain: 0.02 },
-            { type: 'triangle', baseFreq: 2200, harmonics: [1, 2.4, 4.2, 6.3], gain: 0.016 },
-            { type: 'sawtooth', baseFreq: 1800, harmonics: [1, 2.5, 4.3, 6.1], gain: 0.018 },
-            { type: 'sine', baseFreq: 5000, harmonics: [1, 2.8, 4.5, 6.9], gain: 0.014 },
+            { type: 'sine', baseFreq: 1600, harmonics: [1, 2.3, 3.6, 5.2, 6.8], gain: 0.08 },
+            { type: 'triangle', baseFreq: 2200, harmonics: [1, 2.4, 4.2, 6.3], gain: 0.065 },
+            { type: 'sawtooth', baseFreq: 1800, harmonics: [1, 2.5, 4.3, 6.1], gain: 0.07 },
+            { type: 'sine', baseFreq: 5000, harmonics: [1, 2.8, 4.5, 6.9], gain: 0.055 },
             
             // Extras
-            { type: 'sine', baseFreq: 8000, harmonics: [1, 2.4, 4.1, 6.8], gain: 0.01 },
-            { type: 'triangle', baseFreq: 6000, harmonics: [1, 2.2, 3.8, 5.5], gain: 0.012 },
-            { type: 'sawtooth', baseFreq: 4000, harmonics: [1, 2.7, 4.9, 7.3], gain: 0.014 },
-            { type: 'sine', baseFreq: 9000, harmonics: [1, 2.1, 3.3, 5.1], gain: 0.008 }
+            { type: 'sine', baseFreq: 8000, harmonics: [1, 2.4, 4.1, 6.8], gain: 0.04 },
+            { type: 'triangle', baseFreq: 6000, harmonics: [1, 2.2, 3.8, 5.5], gain: 0.05 },
+            { type: 'sawtooth', baseFreq: 4000, harmonics: [1, 2.7, 4.9, 7.3], gain: 0.055 },
+            { type: 'sine', baseFreq: 9000, harmonics: [1, 2.1, 3.3, 5.1], gain: 0.035 }
         ];
 
         let usedTimbreIndices = [];
@@ -165,7 +165,7 @@
                 this.baseFreq = this.timbre.baseFreq + offset + random(-100, 100);
                 this.baseFreq = constrain(this.baseFreq, 600, 16000);
                 
-                // Crear nodos de audio - UN SOLO OSCILADOR + FILTRO
+                // Crear nodos de audio
                 this.createNodes();
                 this.connectNodes();
                 this.startNodes();
@@ -182,9 +182,9 @@
                 this.osc.type = this.timbre.type || 'sine';
                 this.osc.frequency.value = this.baseFreq;
                 
-                // Ganancia
+                // Ganancia - SUBIDA x4
                 this.gain = ctx.createGain();
-                this.gain.gain.value = this.timbre.gain || 0.015;
+                this.gain.gain.value = (this.timbre.gain || 0.015) * 4;
                 
                 // Filtro resonante para dar carácter
                 this.filter = ctx.createBiquadFilter();
@@ -271,7 +271,7 @@
                     this.filter.Q.value = 2 + growth * 8;
                     
                     // Ganancia aumenta
-                    const baseGain = this.timbre.gain || 0.015;
+                    const baseGain = (this.timbre.gain || 0.015) * 4;
                     this.gain.gain.value = baseGain * (0.5 + growth * 0.5);
                 }
                 
@@ -410,7 +410,7 @@
                     try {
                         const gain = audioCtx.createGain();
                         const freq = baseFreq * (1 + random(-0.2, 0.2)) * (1 + i * random(0.05, 0.1));
-                        gain.gain.setValueAtTime(0.008 + random(0, 0.008), audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.03 + random(0, 0.02), audioCtx.currentTime);
                         gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + random(0.1, 0.3));
                         
                         const osc = audioCtx.createOscillator();
@@ -554,7 +554,7 @@
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 masterGainNode = audioCtx.createGain();
-                masterGainNode.gain.value = 0.25;
+                masterGainNode.gain.value = 0.8;  // SUBIDO de 0.25 a 0.8
                 masterGainNode.connect(audioCtx.destination);
                 
                 if(audioCtx.listener) {
@@ -687,7 +687,7 @@
             slider.addEventListener('input', e => { 
                 masterVolume = parseFloat(e.target.value);
                 if(masterGainNode) {
-                    masterGainNode.gain.value = masterVolume * 0.25;
+                    masterGainNode.gain.value = masterVolume * 0.8;  // SUBIDO de 0.25 a 0.8
                 }
             });
             
@@ -695,7 +695,7 @@
                 isMuted = !isMuted;
                 muteBtn.innerHTML = isMuted ? 'X' : 'M';
                 if(masterGainNode) {
-                    masterGainNode.gain.value = isMuted ? 0 : masterVolume * 0.25;
+                    masterGainNode.gain.value = isMuted ? 0 : masterVolume * 0.8;
                 }
             });
             
